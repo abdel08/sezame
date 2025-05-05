@@ -24,6 +24,15 @@ type Technicien = {
   nom: string;
 };
 
+type SupabaseIntervention = {
+  id: string;
+  motif: string;
+  statut: string;
+  date_intervention: string;
+  client: Client[];
+  technicien: Technicien[];
+};
+
 type Intervention = {
   id: string;
   motif: string;
@@ -57,18 +66,19 @@ export default function CarteInterventions() {
         return;
       }
 
+      const castedData = data as SupabaseIntervention[];
+
       const geoData: Positionnee[] = [];
 
-      for (const inter of data as Intervention[]) {
-        const adresse = inter.client?.adresse;
-        const nomClient = inter.client?.nom ?? 'Client inconnu';
-        const nomTech = inter.technicien?.nom ?? 'Technicien inconnu';
+      for (const inter of castedData) {
+        const client = inter.client?.[0] ?? null;
+        const technicien = inter.technicien?.[0] ?? null;
 
-        if (!adresse) continue;
+        if (!client?.adresse) continue;
 
         try {
           const res = await axios.get(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(client.adresse)}`
           );
 
           if (res.data?.[0]) {
@@ -80,8 +90,8 @@ export default function CarteInterventions() {
                 motif: inter.motif,
                 statut: inter.statut,
                 date_intervention: inter.date_intervention,
-                client: { nom: nomClient, adresse },
-                technicien: { nom: nomTech },
+                client,
+                technicien,
               },
             });
           }
@@ -108,9 +118,9 @@ export default function CarteInterventions() {
         {markers.map((marker, idx) => (
           <Marker key={idx} position={[marker.lat, marker.lon]}>
             <Popup>
-              <strong>{marker.info.client?.nom}</strong><br />
+              <strong>{marker.info.client?.nom ?? 'Client inconnu'}</strong><br />
               🛠 {marker.info.motif}<br />
-              👷 {marker.info.technicien?.nom}<br />
+              👷 {marker.info.technicien?.nom ?? 'Technicien inconnu'}<br />
               📅 {marker.info.date_intervention}<br />
               📍 Statut : {marker.info.statut}
             </Popup>
