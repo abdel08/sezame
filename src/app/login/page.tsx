@@ -27,8 +27,6 @@ export default function LoginPage() {
         return;
       }
 
-      const userId = profileData.id;
-
       // Étape 2 : générer l’email fictif
       const email = `${nom.replace(/\s+/g, '').toLowerCase()}@app.local`;
 

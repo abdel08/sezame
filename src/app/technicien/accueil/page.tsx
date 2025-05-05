@@ -32,7 +32,7 @@ export default function TechnicienAccueil() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setError("Erreur d'authentification");
+        setError('Erreur d’authentification');
         setLoading(false);
         return;
       }
@@ -46,7 +46,7 @@ export default function TechnicienAccueil() {
         .order('date_intervention', { ascending: true });
 
       if (interError || !data) {
-        setError("Erreur de chargement des interventions");
+        setError('Erreur de chargement des interventions');
       } else {
         setInterventions(data as Intervention[]);
       }
@@ -72,7 +72,7 @@ export default function TechnicienAccueil() {
     setInterventions((data || []) as Intervention[]);
   };
 
-  if (loading) return <p className="p-6">Chargement...</p>;
+  if (loading) return <p className="p-6">Chargement…</p>;
   if (error) return <p className="text-red-600 p-6">{error}</p>;
 
   return (
@@ -93,7 +93,7 @@ export default function TechnicienAccueil() {
                 onClick={() => router.push(`/technicien/intervention/${intervention.id}`)}
                 className="bg-blue-600 text-white px-4 py-2 rounded"
               >
-                Démarrer l'intervention
+                Démarrer l’intervention
               </button>
             )}
 

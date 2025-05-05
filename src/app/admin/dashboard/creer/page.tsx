@@ -105,7 +105,7 @@ export default function CreerIntervention() {
         <input
           type="text"
           className="border p-2 w-full"
-          placeholder="Motif de l'intervention"
+          placeholder="Motif de l&#39;intervention"
           value={form.motif}
           onChange={(e) => setForm({ ...form, motif: e.target.value })}
           required
@@ -168,7 +168,7 @@ export default function CreerIntervention() {
         </select>
 
         <button type="submit" className="bg-blue-600 text-white p-2 w-full rounded">
-          Créer l'intervention
+          Créer l&#39;intervention
         </button>
       </form>
     </main>

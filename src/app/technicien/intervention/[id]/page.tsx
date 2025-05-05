@@ -46,12 +46,12 @@ export default function InterventionStart() {
     if (id) fetchIntervention();
   }, [id]);
 
-  if (loading) return <div className="p-6">Chargement...</div>;
+  if (loading) return <div className="p-6">Chargement…</div>;
   if (!intervention) return <div className="p-6 text-red-600">Intervention introuvable.</div>;
 
   return (
     <main className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Démarrer l'intervention</h1>
+      <h1 className="text-2xl font-bold mb-4">Démarrer l’intervention</h1>
 
       <div className="border p-4 rounded mb-6 space-y-2 bg-white shadow">
         <p><strong>Client :</strong> {intervention.clients.nom}</p>

@@ -15,7 +15,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// ✅ Typage propre
 type ClientInfo = { nom: string; adresse: string };
 type TechInfo = { nom: string };
 
@@ -39,7 +38,7 @@ export default function CarteInterventions() {
 
   useEffect(() => {
     async function fetchData() {
-      const { data: interData, error } = await supabase
+      const { data, error } = await supabase
         .from('interventions')
         .select(`
           id, motif, statut, date_intervention, 
@@ -47,17 +46,17 @@ export default function CarteInterventions() {
           technicien:technicien_id(nom)
         `);
 
-      if (error) {
+      if (error || !data) {
         console.error('Erreur récupération interventions :', error);
         return;
       }
 
       const geoData: Positionnee[] = [];
 
-      for (const inter of interData as Intervention[]) {
+      for (const inter of data as Intervention[]) {
         const adresse = inter.client?.[0]?.adresse;
-        const nomClient = inter.client?.[0]?.nom || 'Client inconnu';
-        const nomTech = inter.technicien?.[0]?.nom || 'Technicien inconnu';
+        const nomClient = inter.client?.[0]?.nom ?? 'Client inconnu';
+        const nomTech = inter.technicien?.[0]?.nom ?? 'Technicien inconnu';
 
         if (!adresse) continue;
 
@@ -66,7 +65,7 @@ export default function CarteInterventions() {
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
           );
 
-          if (res.data && res.data[0]) {
+          if (res.data?.[0]) {
             geoData.push({
               lat: parseFloat(res.data[0].lat),
               lon: parseFloat(res.data[0].lon),
