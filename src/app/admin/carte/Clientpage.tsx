@@ -7,7 +7,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from 'axios';
 import { supabase } from '../../../../lib/supabaseClient';
 
-// Corrige les icônes manquantes de Leaflet
+// Corriger les icônes Leaflet manquants
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -15,73 +15,87 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-type ClientInfo = { nom: string; adresse: string };
-type TechInfo = { nom: string };
-
-type Intervention = {
+// Types stricts
+type InterventionRecord = {
   id: string;
   motif: string;
   statut: string;
   date_intervention: string;
-  client: ClientInfo[];
-  technicien: TechInfo[];
+  client: {
+    nom: string;
+    adresse: string;
+  } | null;
+  technicien: {
+    nom: string;
+  } | null;
 };
 
-type Positionnee = {
+type MarkerData = {
   lat: number;
   lon: number;
-  info: Intervention;
+  info: {
+    motif: string;
+    statut: string;
+    date_intervention: string;
+    client: string;
+    technicien: string;
+  };
 };
 
 export default function CarteInterventions() {
-  const [markers, setMarkers] = useState<Positionnee[]>([]);
+  const [markers, setMarkers] = useState<MarkerData[]>([]);
 
   useEffect(() => {
     async function fetchData() {
       const { data, error } = await supabase
         .from('interventions')
         .select(`
-          id, motif, statut, date_intervention, 
-          client:client_id(nom, adresse), 
+          id, motif, statut, date_intervention,
+          client:client_id(nom, adresse),
           technicien:technicien_id(nom)
         `);
 
       if (error || !data) {
-        console.error('Erreur récupération interventions :', error);
+        console.error('❌ Erreur récupération interventions :', error);
         return;
       }
 
-      const geoData: Positionnee[] = [];
+      const interventions = data as unknown as InterventionRecord[];
 
-      for (const inter of data as Intervention[]) {
-        const adresse = inter.client?.[0]?.adresse;
-        const nomClient = inter.client?.[0]?.nom ?? 'Client inconnu';
-        const nomTech = inter.technicien?.[0]?.nom ?? 'Technicien inconnu';
+      const results = await Promise.all(
+        interventions.map(async (inter) => {
+          const adresse = inter.client?.adresse;
+          const nomClient = inter.client?.nom ?? 'Client inconnu';
+          const nomTech = inter.technicien?.nom ?? 'Technicien inconnu';
 
-        if (!adresse) continue;
+          if (!adresse) return null;
 
-        try {
-          const res = await axios.get(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
-          );
+          try {
+            const res = await axios.get(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
+            );
+            const coord = res.data?.[0];
+            if (!coord) return null;
 
-          if (res.data?.[0]) {
-            geoData.push({
-              lat: parseFloat(res.data[0].lat),
-              lon: parseFloat(res.data[0].lon),
+            return {
+              lat: parseFloat(coord.lat),
+              lon: parseFloat(coord.lon),
               info: {
-                ...inter,
-                client: [{ nom: nomClient, adresse }],
-                technicien: [{ nom: nomTech }],
+                motif: inter.motif,
+                statut: inter.statut,
+                date_intervention: inter.date_intervention,
+                client: nomClient,
+                technicien: nomTech,
               },
-            });
+            };
+          } catch (err) {
+            console.error('❌ Erreur géocodage :', err);
+            return null;
           }
-        } catch (err) {
-          console.error('Erreur géocodage :', err);
-        }
-      }
+        })
+      );
 
-      setMarkers(geoData);
+      setMarkers(results.filter(Boolean) as MarkerData[]);
     }
 
     fetchData();
@@ -99,9 +113,9 @@ export default function CarteInterventions() {
         {markers.map((marker, idx) => (
           <Marker key={idx} position={[marker.lat, marker.lon]}>
             <Popup>
-              <strong>{marker.info.client[0]?.nom}</strong><br />
+              <strong>{marker.info.client}</strong><br />
               🛠 {marker.info.motif}<br />
-              👷 {marker.info.technicien[0]?.nom}<br />
+              👷 {marker.info.technicien}<br />
               📅 {marker.info.date_intervention}<br />
               📍 Statut : {marker.info.statut}
             </Popup>

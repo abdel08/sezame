@@ -1,3 +1,4 @@
+// ✅ src/components/MapClient.tsx corrigé
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -7,7 +8,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { supabase } from '../../lib/supabaseClient';
 
-// Configuration des icônes par défaut
+// Fix des icônes Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -15,30 +16,31 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-type SupabaseIntervention = {
+// ✅ Typage correct
+interface SupabaseIntervention {
   motif: string;
   statut: string;
   date_intervention: string;
   clients: {
     nom: string;
     adresse: string;
-  };
+  } | null;
   profiles: {
     nom: string;
-  };
-};
+  } | null;
+}
 
-type MarkerInfo = {
+interface MarkerInfo {
   lat: number;
   lon: number;
   info: {
     motif: string;
-    date_intervention: string;
     statut: string;
+    date_intervention: string;
     client: string;
     technicien: string;
   };
-};
+}
 
 export default function MapClient() {
   const [markers, setMarkers] = useState<MarkerInfo[]>([]);
@@ -50,8 +52,6 @@ export default function MapClient() {
         .select(`motif, statut, date_intervention, clients:client_id(nom, adresse), profiles:technicien_id(nom)`)
         .returns<SupabaseIntervention[]>();
 
-      console.log('📦 Données brutes Supabase :', data);
-
       if (!data) return;
 
       const results = await Promise.all(
@@ -60,22 +60,13 @@ export default function MapClient() {
           const client = inter.clients?.nom ?? 'Client inconnu';
           const technicien = inter.profiles?.nom ?? 'Technicien inconnu';
 
-          console.log('🧩 Intervention :', inter);
-          console.log('📍 Adresse extraite :', adresse);
-
-          if (!adresse) {
-            console.warn('❌ Adresse manquante pour :', inter);
-            return null;
-          }
+          if (!adresse) return null;
 
           try {
             const res = await axios.get(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
             );
             const coord = res.data?.[0];
-
-            console.log('📍 Résultat géocodage pour', adresse, ':', res.data);
-
             if (!coord) return null;
 
             return {
@@ -88,7 +79,7 @@ export default function MapClient() {
                 client,
                 technicien,
               },
-            };
+            } as MarkerInfo;
           } catch (err) {
             console.error('Erreur géocodage :', err);
             return null;
@@ -96,9 +87,7 @@ export default function MapClient() {
         })
       );
 
-      const geoData = results.filter(Boolean) as MarkerInfo[];
-      console.log('✅ Données géocodées finales :', geoData);
-      setMarkers(geoData);
+      setMarkers(results.filter(Boolean) as MarkerInfo[]);
     }
 
     fetchData();
