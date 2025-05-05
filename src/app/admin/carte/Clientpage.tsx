@@ -1,13 +1,14 @@
+// ✅ src/components/MapClient.tsx corrigé
 'use client';
 
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from 'axios';
 import { supabase } from '../../../../lib/supabaseClient';
 
-// Corrige les icônes manquantes de Leaflet
+// Fix des icônes Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -15,118 +16,100 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-type Client = {
-  nom: string;
-  adresse: string;
-};
-
-type Technicien = {
-  nom: string;
-};
-
-type SupabaseIntervention = {
-  id: string;
+// ✅ Typage correct
+interface SupabaseIntervention {
   motif: string;
   statut: string;
   date_intervention: string;
-  client: Client[];
-  technicien: Technicien[];
-};
+  clients: {
+    nom: string;
+    adresse: string;
+  } | null;
+  profiles: {
+    nom: string;
+  } | null;
+}
 
-type Intervention = {
-  id: string;
-  motif: string;
-  statut: string;
-  date_intervention: string;
-  client: Client | null;
-  technicien: Technicien | null;
-};
-
-type Positionnee = {
+interface MarkerInfo {
   lat: number;
   lon: number;
-  info: Intervention;
-};
+  info: {
+    motif: string;
+    statut: string;
+    date_intervention: string;
+    client: string;
+    technicien: string;
+  };
+}
 
-export default function CarteInterventions() {
-  const [markers, setMarkers] = useState<Positionnee[]>([]);
+export default function MapClient() {
+  const [markers, setMarkers] = useState<MarkerInfo[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('interventions')
-        .select(`
-          id, motif, statut, date_intervention, 
-          client:client_id(nom, adresse), 
-          technicien:technicien_id(nom)
-        `);
+        .select(`motif, statut, date_intervention, clients:client_id(nom, adresse), profiles:technicien_id(nom)`)
+        .returns<SupabaseIntervention[]>();
 
-      if (error || !data) {
-        console.error('Erreur récupération interventions :', error);
-        return;
-      }
+      if (!data) return;
 
-      const castedData = data as SupabaseIntervention[];
+      const results = await Promise.all(
+        data.map(async (inter) => {
+          const adresse = inter.clients?.adresse;
+          const client = inter.clients?.nom ?? 'Client inconnu';
+          const technicien = inter.profiles?.nom ?? 'Technicien inconnu';
 
-      const geoData: Positionnee[] = [];
+          if (!adresse) return null;
 
-      for (const inter of castedData) {
-        const client = inter.client?.[0] ?? null;
-        const technicien = inter.technicien?.[0] ?? null;
+          try {
+            const res = await axios.get(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`
+            );
+            const coord = res.data?.[0];
+            if (!coord) return null;
 
-        if (!client?.adresse) continue;
-
-        try {
-          const res = await axios.get(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(client.adresse)}`
-          );
-
-          if (res.data?.[0]) {
-            geoData.push({
-              lat: parseFloat(res.data[0].lat),
-              lon: parseFloat(res.data[0].lon),
+            return {
+              lat: parseFloat(coord.lat),
+              lon: parseFloat(coord.lon),
               info: {
-                id: inter.id,
                 motif: inter.motif,
                 statut: inter.statut,
                 date_intervention: inter.date_intervention,
                 client,
                 technicien,
               },
-            });
+            } as MarkerInfo;
+          } catch (err) {
+            console.error('Erreur géocodage :', err);
+            return null;
           }
-        } catch (err) {
-          console.error('Erreur géocodage :', err);
-        }
-      }
+        })
+      );
 
-      setMarkers(geoData);
+      setMarkers(results.filter(Boolean) as MarkerInfo[]);
     }
 
     fetchData();
   }, []);
 
   return (
-    <main className="p-4">
-      <h1 className="text-xl font-bold mb-4">Carte des interventions</h1>
-
-      <MapContainer center={[46.5, 2.2]} zoom={6} style={{ height: '600px', width: '100%' }}>
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OpenStreetMap contributors"
-        />
-        {markers.map((marker, idx) => (
-          <Marker key={idx} position={[marker.lat, marker.lon]}>
-            <Popup>
-              <strong>{marker.info.client?.nom ?? 'Client inconnu'}</strong><br />
-              🛠 {marker.info.motif}<br />
-              👷 {marker.info.technicien?.nom ?? 'Technicien inconnu'}<br />
-              📅 {marker.info.date_intervention}<br />
-              📍 Statut : {marker.info.statut}
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </main>
+    <MapContainer center={[46.5, 2.2]} zoom={6} style={{ height: '600px', width: '100%' }}>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
+      />
+      {markers.map((m, i) => (
+        <Marker key={i} position={[m.lat, m.lon]}>
+          <Popup>
+            <strong>{m.info.client}</strong><br />
+            🛠 {m.info.motif}<br />
+            👷 {m.info.technicien}<br />
+            📅 {m.info.date_intervention}<br />
+            📍 {m.info.statut}
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
   );
 }
