@@ -4,35 +4,73 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../../../lib/supabaseClient';
 import { useParams } from 'next/navigation';
 
+type Intervention = {
+  id: string;
+  motif: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  client_id: string;
+  technicien_id: string;
+  validation_technicien: string;
+};
+
+type Client = {
+  id: string;
+  nom: string;
+  adresse: string;
+};
+
+type Technicien = {
+  id: string;
+  nom: string;
+  email: string;
+};
+
 export default function FicheIntervention() {
-  const { id } = useParams();
-  const [intervention, setIntervention] = useState<any>(null);
-  const [client, setClient] = useState<any>(null);
-  const [technicien, setTechnicien] = useState<any>(null);
+  const params = useParams();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id || '';
+
+  const [intervention, setIntervention] = useState<Intervention | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
+  const [technicien, setTechnicien] = useState<Technicien | null>(null);
 
   useEffect(() => {
     async function fetchIntervention() {
-      const { data: interventionData } = await supabase
+      const { data: interventionData, error: interError } = await supabase
         .from('interventions')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (interventionData) {
-        setIntervention(interventionData);
+      if (interError) {
+        console.error('Erreur intervention :', interError);
+        return;
+      }
 
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('id', interventionData.client_id)
-          .single();
+      setIntervention(interventionData);
+
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', interventionData.client_id)
+        .single();
+
+      if (clientError) {
+        console.error('Erreur client :', clientError);
+      } else {
         setClient(clientData);
+      }
 
-        const { data: technicienData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', interventionData.technicien_id)
-          .single();
+      const { data: technicienData, error: techError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', interventionData.technicien_id)
+        .single();
+
+      if (techError) {
+        console.error('Erreur technicien :', techError);
+      } else {
         setTechnicien(technicienData);
       }
     }

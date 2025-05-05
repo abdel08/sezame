@@ -15,13 +15,17 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+// ✅ Typage propre
+type ClientInfo = { nom: string; adresse: string };
+type TechInfo = { nom: string };
+
 type Intervention = {
   id: string;
   motif: string;
   statut: string;
   date_intervention: string;
-  client: { nom: string; adresse: string }[];
-  technicien: { nom: string }[];
+  client: ClientInfo[];
+  technicien: TechInfo[];
 };
 
 type Positionnee = {
@@ -35,7 +39,7 @@ export default function CarteInterventions() {
 
   useEffect(() => {
     async function fetchData() {
-      const { data: interData } = await supabase
+      const { data: interData, error } = await supabase
         .from('interventions')
         .select(`
           id, motif, statut, date_intervention, 
@@ -43,14 +47,17 @@ export default function CarteInterventions() {
           technicien:technicien_id(nom)
         `);
 
-      if (!interData) return;
+      if (error) {
+        console.error('Erreur récupération interventions :', error);
+        return;
+      }
 
       const geoData: Positionnee[] = [];
 
-      for (const inter of interData) {
-        const adresse = inter.client[0]?.adresse;
-        const nomClient = inter.client[0]?.nom || 'Client inconnu';
-        const nomTech = inter.technicien[0]?.nom || 'Technicien inconnu';
+      for (const inter of interData as Intervention[]) {
+        const adresse = inter.client?.[0]?.adresse;
+        const nomClient = inter.client?.[0]?.nom || 'Client inconnu';
+        const nomTech = inter.technicien?.[0]?.nom || 'Technicien inconnu';
 
         if (!adresse) continue;
 

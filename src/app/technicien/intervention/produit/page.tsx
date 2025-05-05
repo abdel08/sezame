@@ -1,27 +1,29 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../../../lib/supabaseClient';
 
-export default function ChoixProduit({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ChoixProduit() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
   const [produits, setProduits] = useState<any[]>([]);
   const [produitSelectionne, setProduitSelectionne] = useState<string>('');
-  const router = useRouter();
 
   useEffect(() => {
     async function fetchProduits() {
       const { data, error } = await supabase.from('produits').select('*');
-      if (error) console.error('Erreur produits :', error);
-      else setProduits(data);
+      if (error) console.error('❌ Erreur produits :', error);
+      else setProduits(data || []);
     }
 
     fetchProduits();
   }, []);
 
   const handleSuivant = async () => {
-    // Tu peux stocker la sélection dans Supabase ici si besoin
+    // Tu peux stocker la sélection ici plus tard si besoin
     router.push(`/technicien/intervention/${id}/diagnostic`);
   };
 

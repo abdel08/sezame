@@ -4,16 +4,35 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../../lib/supabaseClient';
 import Link from 'next/link';
 
+type Intervention = {
+  id: string;
+  motif: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  client_id: string;
+  validation_technicien: 'accepte' | 'refuse' | 'en_attente' | string;
+};
+
+type Client = {
+  id: string;
+  nom: string;
+};
+
 export default function AdminDashboard() {
-  const [interventions, setInterventions] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<Intervention[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      const { data: interventionsData } = await supabase.from('interventions').select('*');
+      const { data: interventionsData } = await supabase
+        .from('interventions')
+        .select('*');
       setInterventions(interventionsData || []);
 
-      const { data: clientsData } = await supabase.from('clients').select('*');
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('*');
       setClients(clientsData || []);
     }
 
@@ -55,14 +74,19 @@ export default function AdminDashboard() {
               Client : {getClientName(intervention.client_id)}
             </h2>
             <p>Motif : {intervention.motif}</p>
-            <p>Date : {intervention.date_intervention} ({intervention.heure_debut} - {intervention.heure_fin})</p>
+            <p>
+              Date : {intervention.date_intervention} ({intervention.heure_debut} - {intervention.heure_fin})
+            </p>
 
             <p className={getValidationColor(intervention.validation_technicien)}>
-              Validation Technicien : {intervention.validation_technicien === 'en_attente'
+              Validation Technicien :{' '}
+              {intervention.validation_technicien === 'en_attente'
                 ? 'En attente'
                 : intervention.validation_technicien === 'accepte'
                 ? 'Acceptée'
-                : 'Refusée'}
+                : intervention.validation_technicien === 'refuse'
+                ? 'Refusée'
+                : 'Inconnue'}
             </p>
 
             <Link href={`/admin/dashboard/${intervention.id}`}>

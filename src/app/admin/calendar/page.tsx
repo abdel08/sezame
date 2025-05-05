@@ -2,7 +2,7 @@
 
 import type { View } from 'react-big-calendar';
 import { useEffect, useState } from 'react';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { Calendar, dateFnsLocalizer, EventPropGetter } from 'react-big-calendar';
 import { supabase } from '../../../../lib/supabaseClient';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,44 +17,48 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-type Intervention = {
+// 👇 Types
+type Technicien = {
   id: string;
-  motif: string;
-  date_intervention: string;
-  heure_debut: string;
-  heure_fin: string;
-  client_id: string;
+  nom: string;
+};
+
+type InterventionEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
   technicien_id: string;
-  validation_technicien?: string;
   statut?: string;
+  colorClass: string;
 };
 
 export default function AdminCalendar() {
-  const [events, setEvents] = useState<any[]>([]);
-  const [allEvents, setAllEvents] = useState<any[]>([]);
-  const [techniciens, setTechniciens] = useState<any[]>([]);
+  const [events, setEvents] = useState<InterventionEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<InterventionEvent[]>([]);
+  const [techniciens, setTechniciens] = useState<Technicien[]>([]);
   const [selectedTech, setSelectedTech] = useState<string>('');
 
   useEffect(() => {
     async function fetchData() {
       const { data: clientsData } = await supabase.from('clients').select('id, nom');
-      const clientsMap = new Map((clientsData || []).map((c) => [c.id, c.nom]));
+      const clientsMap = new Map(clientsData?.map((c) => [c.id, c.nom]));
 
       const { data: techData } = await supabase
         .from('profiles')
         .select('id, nom')
         .eq('role', 'technicien');
       setTechniciens(techData || []);
-      const techMap = new Map((techData || []).map((t) => [t.id, t.nom]));
+      const techMap = new Map(techData?.map((t) => [t.id, t.nom]));
 
       const { data: interData } = await supabase.from('interventions').select('*');
       const interventions = interData || [];
 
-      const formatted = interventions
+      const formatted: InterventionEvent[] = interventions
         .filter((i) => i.date_intervention && i.heure_debut && i.heure_fin)
         .map((inter) => {
-          const nomClient = clientsMap.get(inter.client_id) ?? 'Client inconnu';
-          const nomTech = techMap.get(inter.technicien_id) ?? 'Technicien inconnu';
+          const nomClient = clientsMap?.get(inter.client_id) ?? 'Client inconnu';
+          const nomTech = techMap?.get(inter.technicien_id) ?? 'Technicien inconnu';
 
           const colorClass =
             inter.statut === 'Terminée'
@@ -89,7 +93,7 @@ export default function AdminCalendar() {
     }
   }, [selectedTech, allEvents]);
 
-  const eventStyleGetter = (event: any) => {
+  const eventStyleGetter: EventPropGetter<InterventionEvent> = (event) => {
     return {
       className: `text-white ${event.colorClass}`,
       style: {

@@ -3,8 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+type FormState = {
+  nom: string;
+  password: string;
+  role: 'technicien' | 'admin';
+};
+
 export default function AjouterUtilisateur() {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     nom: '',
     password: '',
     role: 'technicien',
@@ -13,28 +19,27 @@ export default function AjouterUtilisateur() {
   const [success, setSuccess] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!form.nom || !form.password || !form.role) {
+    if (!form.nom || !form.password) {
       setError('Tous les champs sont obligatoires.');
       return;
     }
 
     try {
-      const response = await fetch('https://safwzkcdomnvlggzxjdr.supabase.co/functions/v1/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nom: form.nom,
-          password: form.password,
-          role: form.role,
-        }),
-      });
+      const response = await fetch(
+        'https://safwzkcdomnvlggzxjdr.supabase.co/functions/v1/create-user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
       const result = await response.json();
 
@@ -86,7 +91,7 @@ export default function AjouterUtilisateur() {
           <select
             className="w-full border p-2 rounded"
             value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            onChange={(e) => setForm({ ...form, role: e.target.value as FormState['role'] })}
           >
             <option value="technicien">Technicien</option>
             <option value="admin">Admin</option>

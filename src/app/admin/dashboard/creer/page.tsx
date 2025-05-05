@@ -1,15 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../../../lib/supabaseClient';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+type Client = {
+  id: string;
+  nom: string;
+  adresse: string;
+};
+
+type Technicien = {
+  id: string;
+  nom: string;
+  disponible?: boolean;
+};
+
 export default function CreerIntervention() {
   const router = useRouter();
-  const [clients, setClients] = useState<any[]>([]);
-  const [techniciens, setTechniciens] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [techniciens, setTechniciens] = useState<Technicien[]>([]);
   const [form, setForm] = useState({
     client_id: '',
     motif: '',
@@ -22,14 +34,13 @@ export default function CreerIntervention() {
   useEffect(() => {
     async function fetchData() {
       const { data: clientsData } = await supabase.from('clients').select('*');
-      setClients(clientsData || []);
+      if (clientsData) setClients(clientsData);
 
-      const { data: techniciensData } = await supabase
+      const { data: techData } = await supabase
         .from('profiles')
         .select('id, nom')
         .eq('role', 'technicien');
-
-      setTechniciens(techniciensData || []);
+      if (techData) setTechniciens(techData);
     }
 
     fetchData();
@@ -45,29 +56,27 @@ export default function CreerIntervention() {
       .select('technicien_id, heure_debut, heure_fin')
       .eq('date_intervention', dateStr);
 
-    const techniciensDisponibles = techniciens.map((tech) => {
-      const conflit = interventions?.some((inter: any) =>
+    const techsDisponibles = techniciens.map((tech) => {
+      const conflit = interventions?.some((inter) =>
         inter.technicien_id === tech.id &&
         heureDebut < inter.heure_fin &&
         heureFin > inter.heure_debut
       );
-
-      return {
-        ...tech,
-        disponible: !conflit,
-      };
+      return { ...tech, disponible: !conflit };
     });
 
-    setTechniciens(techniciensDisponibles);
+    setTechniciens(techsDisponibles);
   }
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
     const { error } = await supabase.from('interventions').insert([{
       ...form,
       date_intervention: form.date_intervention.toISOString().split('T')[0],
       validation_technicien: 'en_attente',
     }]);
+
     if (!error) router.push('/admin/dashboard');
     else alert('Erreur création intervention : ' + error.message);
   }
@@ -102,11 +111,11 @@ export default function CreerIntervention() {
           required
         />
 
-        {/* Date Intervention */}
+        {/* Date */}
         <div className="border p-2 w-full">
           <DatePicker
             selected={form.date_intervention}
-            onChange={(date: Date | null) => {
+            onChange={(date) => {
               if (date) {
                 setForm({ ...form, date_intervention: date });
                 verifierDisponibilite(date, form.heure_debut, form.heure_fin);
@@ -117,28 +126,28 @@ export default function CreerIntervention() {
           />
         </div>
 
-        {/* Heure Début */}
+        {/* Heure début */}
         <input
           type="time"
           className="border p-2 w-full"
           value={form.heure_debut}
           onChange={(e) => {
-            const newHeure = e.target.value;
-            setForm({ ...form, heure_debut: newHeure });
-            verifierDisponibilite(form.date_intervention, newHeure, form.heure_fin);
+            const heure = e.target.value;
+            setForm({ ...form, heure_debut: heure });
+            verifierDisponibilite(form.date_intervention, heure, form.heure_fin);
           }}
           required
         />
 
-        {/* Heure Fin */}
+        {/* Heure fin */}
         <input
           type="time"
           className="border p-2 w-full"
           value={form.heure_fin}
           onChange={(e) => {
-            const newHeure = e.target.value;
-            setForm({ ...form, heure_fin: newHeure });
-            verifierDisponibilite(form.date_intervention, form.heure_debut, newHeure);
+            const heure = e.target.value;
+            setForm({ ...form, heure_fin: heure });
+            verifierDisponibilite(form.date_intervention, form.heure_debut, heure);
           }}
           required
         />
@@ -158,7 +167,6 @@ export default function CreerIntervention() {
           ))}
         </select>
 
-        {/* Submit */}
         <button type="submit" className="bg-blue-600 text-white p-2 w-full rounded">
           Créer l'intervention
         </button>
