@@ -20,6 +20,43 @@ interface ProduitSelectionne {
   photos: { name: string; url: string; path: string }[];
 }
 
+// ✅ IMPORTANT : cette fonction doit être en DEHORS du composant
+export async function uploadPhotoToServer(file: File, produitId: string) {
+  console.log("uploadPhotoToServer appelé !");
+  try {
+    const fileName = `${Date.now()}-${file.name}`;
+    const path = `interventions/${produitId}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    const response = await fetch(
+      'https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('Erreur upload photo :', result);
+      return null;
+    }
+
+    return {
+      name: file.name,
+      url: result.url,
+      path: `${path}/${fileName}`,
+    };
+  } catch (err) {
+    console.error('Erreur upload photo catch :', err);
+    return null;
+  }
+}
+
 export default function EtapeProduit() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [recherche, setRecherche] = useState('');
@@ -57,44 +94,27 @@ export default function EtapeProduit() {
     );
   };
 
-  const handleUploadPhotoVersServeur = async (file: File, produitId: string) => {
-    try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const path = `interventions/${produitId}`;
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const handleFileInputChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    produitId: string
+  ) => {
+    const files = e.target.files;
+    if (!files) return;
 
-      const response = await fetch(
-        'https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
-        }
-      );
+    const uploads = await Promise.all(
+      Array.from(files).map((file) => uploadPhotoToServer(file, produitId))
+    );
 
-      const result = await response.json();
+    const newPhotos = uploads.filter(Boolean) as ProduitSelectionne['photos'];
 
-      if (!response.ok) {
-        console.error('Erreur upload photo :', result);
-        return;
-      }
-
-      const newPhoto = {
-        name: file.name,
-        url: result.url,
-        path: `${path}/${fileName}`,
-      };
-
+    if (newPhotos.length > 0) {
       setSelectionnes((prev) =>
         prev.map((p) =>
           p.id === produitId
-            ? { ...p, photos: [...p.photos, newPhoto] }
+            ? { ...p, photos: [...p.photos, ...newPhotos] }
             : p
         )
       );
-    } catch (err) {
-      console.error('Erreur upload photo catch :', err);
     }
   };
 
@@ -188,14 +208,7 @@ export default function EtapeProduit() {
             type="file"
             accept="image/*"
             multiple
-            onChange={(e) => {
-              const files = e.target.files;
-              if (files) {
-                [...files].forEach((file) => {
-                  handleUploadPhotoVersServeur(file, produit.id);
-                });
-              }
-            }}
+            onChange={(e) => handleFileInputChange(e, produit.id)}
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
 
