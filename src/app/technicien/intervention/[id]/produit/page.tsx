@@ -26,10 +26,13 @@ export default function EtapeProduit() {
   const [selectionnes, setSelectionnes] = useState<ProduitSelectionne[]>([]);
 
   useEffect(() => {
-    supabase.from('produits').select('*').then(({ data, error }) => {
-      if (data) setProduits(data);
-      if (error) console.error('Erreur produits :', error);
-    });
+    supabase
+      .from('produits')
+      .select('*')
+      .then(({ data, error }) => {
+        if (data) setProduits(data);
+        if (error) console.error('Erreur produits :', error);
+      });
   }, []);
 
   const ajouterProduit = (produit: Produit) => {
@@ -54,22 +57,21 @@ export default function EtapeProduit() {
     );
   };
 
-  const handleUploadPhoto = async (file: File, produitId: string) => {
+  const handleUploadPhotoVersServeur = async (file: File, produitId: string) => {
     try {
       const fileName = `${Date.now()}-${file.name}`;
       const path = `interventions/${produitId}`;
       const arrayBuffer = await file.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-      const response = await fetch('https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhZnd6a2Nkb21udmxnZ3p4amRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5MTYwNzIsImV4cCI6MjA2MTQ5MjA3Mn0.pF4vi1fBiWvILP2Vq16TEhxJAnRnJm61GyloctOSf3E', // <--- ici
-        },
-        body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
-      });
-      
+      const response = await fetch(
+        'https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
+        }
+      );
 
       const result = await response.json();
 
@@ -96,7 +98,7 @@ export default function EtapeProduit() {
     }
   };
 
-  const supprimerPhoto = async (id: string, path: string) => {
+  const supprimerPhoto = async (produitId: string, path: string) => {
     const { error } = await supabase.storage.from('photos').remove([path]);
     if (error) {
       console.error('Erreur suppression :', error);
@@ -104,7 +106,9 @@ export default function EtapeProduit() {
     }
     setSelectionnes((prev) =>
       prev.map((p) =>
-        p.id === id ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) } : p
+        p.id === produitId
+          ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) }
+          : p
       )
     );
   };
@@ -188,7 +192,7 @@ export default function EtapeProduit() {
               const files = e.target.files;
               if (files) {
                 [...files].forEach((file) => {
-                  handleUploadPhoto(file, produit.id);
+                  handleUploadPhotoVersServeur(file, produit.id);
                 });
               }
             }}
