@@ -17,7 +17,7 @@ interface ProduitSelectionne {
   nom: string;
   statut: 'fonctionnel' | 'a_remplacer';
   remarque?: string;
-  photos: { name: string; url: string }[];
+  photos: { name: string; url: string; path: string }[];
 }
 
 export default function EtapeProduit() {
@@ -26,20 +26,17 @@ export default function EtapeProduit() {
   const [selectionnes, setSelectionnes] = useState<ProduitSelectionne[]>([]);
 
   useEffect(() => {
-    async function fetchProduits() {
-      const { data, error } = await supabase.from('produits').select('*');
-      if (!error && data) setProduits(data);
-      else console.error('Erreur produits :', error);
-    }
-
-    fetchProduits();
+    supabase.from('produits').select('*').then(({ data, error }) => {
+      if (data) setProduits(data);
+      if (error) console.error('Erreur produits :', error);
+    });
   }, []);
 
   const ajouterProduit = (produit: Produit) => {
     if (!selectionnes.find((p) => p.id === produit.id)) {
-      setSelectionnes([
-        ...selectionnes,
-        { ...produit, statut: 'fonctionnel', photos: [] }
+      setSelectionnes((prev) => [
+        ...prev,
+        { ...produit, statut: 'fonctionnel', photos: [] },
       ]);
     }
     setRecherche('');
@@ -57,25 +54,59 @@ export default function EtapeProduit() {
     );
   };
 
-  const ajouterPhoto = async (id: string, file: File) => {
-    const filePath = `interventions/${id}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from('photos').upload(filePath, file);
+  const handleUploadPhoto = async (file: File, produitId: string) => {
+    try {
+      const fileName = `${Date.now()}-${file.name}`;
+      const path = `interventions/${produitId}`;
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    if (!error) {
-      const { data } = supabase.storage.from('photos').getPublicUrl(filePath);
+      const response = await fetch('https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhZnd6a2Nkb21udmxnZ3p4amRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5MTYwNzIsImV4cCI6MjA2MTQ5MjA3Mn0.pF4vi1fBiWvILP2Vq16TEhxJAnRnJm61GyloctOSf3E', // <--- ici
+        },
+        body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
+      });
+      
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Erreur upload photo :', result);
+        return;
+      }
+
+      const newPhoto = {
+        name: file.name,
+        url: result.url,
+        path: `${path}/${fileName}`,
+      };
+
       setSelectionnes((prev) =>
         prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                photos: [...p.photos, { name: file.name, url: data.publicUrl }]
-              }
+          p.id === produitId
+            ? { ...p, photos: [...p.photos, newPhoto] }
             : p
         )
       );
-    } else {
-      console.error('Erreur upload photo :', error);
+    } catch (err) {
+      console.error('Erreur upload photo catch :', err);
     }
+  };
+
+  const supprimerPhoto = async (id: string, path: string) => {
+    const { error } = await supabase.storage.from('photos').remove([path]);
+    if (error) {
+      console.error('Erreur suppression :', error);
+      return;
+    }
+    setSelectionnes((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) } : p
+      )
+    );
   };
 
   const retirerProduit = (id: string) => {
@@ -115,70 +146,76 @@ export default function EtapeProduit() {
         </div>
       )}
 
-      {selectionnes.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="font-semibold">Produits sélectionnés</h2>
-          {selectionnes.map((produit) => (
-            <Card key={produit.id} className="p-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">{produit.nom}</h3>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => retirerProduit(produit.id)}
-                >
-                  Retirer
-                </Button>
-              </div>
+      {selectionnes.map((produit) => (
+        <Card key={produit.id} className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">{produit.nom}</h3>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => retirerProduit(produit.id)}
+            >
+              Retirer
+            </Button>
+          </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant={produit.statut === 'fonctionnel' ? 'default' : 'outline'}
-                  onClick={() => modifierStatut(produit.id, 'fonctionnel')}
-                >
-                  Fonctionnel
-                </Button>
-                <Button
-                  variant={produit.statut === 'a_remplacer' ? 'default' : 'outline'}
-                  onClick={() => modifierStatut(produit.id, 'a_remplacer')}
-                >
-                  À remplacer
-                </Button>
-              </div>
+          <div className="flex gap-2">
+            <Button
+              variant={produit.statut === 'fonctionnel' ? 'default' : 'outline'}
+              onClick={() => modifierStatut(produit.id, 'fonctionnel')}
+            >
+              Fonctionnel
+            </Button>
+            <Button
+              variant={produit.statut === 'a_remplacer' ? 'default' : 'outline'}
+              onClick={() => modifierStatut(produit.id, 'a_remplacer')}
+            >
+              À remplacer
+            </Button>
+          </div>
 
-              <Textarea
-                placeholder="Remarque optionnelle"
-                value={produit.remarque || ''}
-                onChange={(e) => modifierRemarque(produit.id, e.target.value)}
-              />
+          <Textarea
+            placeholder="Remarque optionnelle"
+            value={produit.remarque || ''}
+            onChange={(e) => modifierRemarque(produit.id, e.target.value)}
+          />
 
-              <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) ajouterPhoto(produit.id, file);
-                  }}
-                />
-              </div>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files) {
+                [...files].forEach((file) => {
+                  handleUploadPhoto(file, produit.id);
+                });
+              }
+            }}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
 
-              {(produit.photos ?? []).length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {produit.photos.map((photo, index) => (
-                    <img
-                      key={index}
-                      src={photo.url}
-                      alt={photo.name}
-                      className="h-24 w-full object-cover rounded border"
-                    />
-                  ))}
+          {produit.photos.length > 0 && (
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+              {produit.photos.map((photo, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={photo.url}
+                    alt={photo.name}
+                    className="h-24 w-full object-cover rounded border"
+                  />
+                  <button
+                    onClick={() => supprimerPhoto(produit.id, photo.path)}
+                    className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
+                  >
+                    ✕
+                  </button>
                 </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }
