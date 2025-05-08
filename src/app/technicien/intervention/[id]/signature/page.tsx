@@ -26,29 +26,39 @@ export default function PageSignature() {
     }
   
     const dataUrl = sigRef.current.getTrimmedCanvas().toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1]; // remove "data:image/png;base64,"
+  
     const path = `interventions/${id}/signature.png`;
   
-    const response = await fetch('/api/upload-signature', {
+    const res = await fetch('/api/intervention/upload-signature', {
       method: 'POST',
-      body: JSON.stringify({
-        file: dataUrl,
-        path
-      }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Data: base64, path }),
     });
   
-    const result = await response.json();
+    const result = await res.json();
   
-    if (!response.ok) {
+    if (!res.ok || !result.url) {
       console.error('Erreur upload signature :', result);
+      alert('Échec de l’enregistrement.');
       return;
     }
   
-    setSaved(true);
-    router.push(`/technicien/intervention/${id}/finalisation`);
+    // Sauvegarde l'URL dans la BDD
+    await fetch('/api/intervention/save-signature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        interventionId: id,
+        signatureUrl: result.url,
+      }),
+    });
+  
+    router.push(`/technicien/intervention/${id}/recapitulatif`);
   };
+  
+  
+  
   
 
   return (

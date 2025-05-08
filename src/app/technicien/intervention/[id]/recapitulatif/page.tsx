@@ -5,68 +5,97 @@ import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../../../../../lib/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 export default function PageRecapitulatif() {
   const { id } = useParams();
   const router = useRouter();
-  const [donnees, setDonnees] = useState<any>(null);
+  const [data, setData] = useState<any>(null);
+  const [produits, setProduits] = useState<any[]>([]);
 
   useEffect(() => {
-    // Appelle ta table d’interventions ou ton stockage local si tu n’as pas encore de persistance
     const fetchData = async () => {
-      const { data, error } = await supabase
+      const { data: intervention, error } = await supabase
         .from('interventions')
-        .select('*, client(*), produits_selectionnes(*)')
+        .select(`*, clients:client_id(nom, adresse, telephone), signature_url`)
         .eq('id', id)
         .single();
 
-      if (data) setDonnees(data);
-      if (error) console.error('Erreur chargement récap :', error);
+      if (error) {
+        console.error('❌ Erreur chargement intervention :', error);
+        return;
+      }
+
+      const { data: produitsBruts, error: produitsErr } = await supabase
+        .from('intervention_produits')
+        .select('*, produits(nom)')
+        .eq('intervention_id', id);
+
+      if (produitsErr) {
+        console.error('❌ Erreur chargement produits intervention :', produitsErr);
+      } else {
+        const produitsFormates = produitsBruts.map((p) => ({
+          nom: p.produits?.nom || 'Produit inconnu',
+          a_remplacer: p.a_remplacer,
+          remarque: p.remarque,
+        }));
+        setProduits(produitsFormates);
+      }
+
+      setData(intervention);
     };
 
     fetchData();
   }, [id]);
 
-  if (!donnees) return <p className="p-6">Chargement...</p>;
+  if (!data) return <div className="p-6">Chargement…</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">Récapitulatif de l’intervention</h1>
+    <main className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Récapitulatif de l’intervention</h1>
 
       <Card className="p-4 space-y-2">
-        <p><strong>Client :</strong> {donnees.client?.nom || 'Inconnu'}</p>
-        <p><strong>Date :</strong> {new Date(donnees.created_at).toLocaleString()}</p>
-        <p><strong>Technicien :</strong> {donnees.technicien_id || '-'}</p>
+        <h2 className="text-lg font-semibold">Client</h2>
+        <p><strong>Nom :</strong> {data.clients?.nom}</p>
+        <p><strong>Adresse :</strong> {data.clients?.adresse}</p>
+        <p><strong>Téléphone :</strong> {data.clients?.telephone}</p>
       </Card>
 
-      <div className="space-y-4">
-        {donnees.produits_selectionnes.map((produit: any, idx: number) => (
-          <Card key={idx} className="p-4 space-y-2">
-            <p><strong>Produit :</strong> {produit.nom}</p>
-            <p><strong>Statut :</strong> {produit.statut}</p>
-            {produit.remarque && <p><strong>Remarque :</strong> {produit.remarque}</p>}
-            {produit.photos && produit.photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {produit.photos.map((photo: any, i: number) => (
-                  <img
-                    key={i}
-                    src={photo.url}
-                    alt={`photo-${i}`}
-                    className="w-full h-24 object-cover rounded border"
-                  />
-                ))}
-              </div>
-            )}
-          </Card>
-        ))}
-      </div>
+      <Card className="p-4 space-y-2">
+        <h2 className="text-lg font-semibold">Produits sélectionnés</h2>
+        {produits.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Aucun produit sélectionné.</p>
+        ) : (
+          produits.map((p, i) => (
+            <div key={i} className="border-t pt-2 mt-2">
+              <p><strong>Produit :</strong> {p.nom}</p>
+              <p><strong>Statut :</strong> {p.a_remplacer ? 'À remplacer' : 'Fonctionnel'}</p>
+              {p.remarque && <p><strong>Remarque :</strong> <em>{p.remarque}</em></p>}
+            </div>
+          ))
+        )}
+      </Card>
 
-      <Button
-        className="w-full mt-6"
-        onClick={() => router.push(`/technicien/intervention/${id}/signature`)}
-      >
-        Continuer vers la signature
-      </Button>
-    </div>
+      <Card className="p-4 space-y-2">
+        <h2 className="text-lg font-semibold">Signature client</h2>
+        {data.signature_url ? (
+          <Image
+            src={data.signature_url}
+            alt="signature"
+            width={300}
+            height={100}
+            className="rounded border bg-white"
+          />
+        ) : (
+          <p className="text-muted-foreground text-sm">Signature non disponible.</p>
+        )}
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={() => router.push(`/technicien/intervention/${id}/finalisation`)}>
+          Finaliser l’intervention
+        </Button>
+      </div>
+    </main>
   );
 }

@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-// next.config.js
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -8,8 +7,12 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
 });
 
+/** @type {NextConfig} */
 const nextConfig = {
-  // Ton ancienne config ici (s'il y a des options, tu les laisses)
+  images: {
+    domains: ['safwzkcdomnvlggzxjdr.supabase.co'], // ✅ autorise les images Supabase Storage
+  },
+  // 👉 ajoute d'autres options ici si besoin plus tard (reactStrictMode, etc.)
 };
 
 module.exports = withPWA(nextConfig);
