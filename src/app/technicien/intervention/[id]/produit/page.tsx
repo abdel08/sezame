@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../../../lib/supabaseClient';
+import { uploadPhotoToServer } from '../../../../../lib/uploadPhoto';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,56 +21,16 @@ interface ProduitSelectionne {
   photos: { name: string; url: string; path: string }[];
 }
 
-// ✅ IMPORTANT : cette fonction doit être en DEHORS du composant
-export async function uploadPhotoToServer(file: File, produitId: string) {
-  console.log("uploadPhotoToServer appelé !");
-  try {
-    const fileName = `${Date.now()}-${file.name}`;
-    const path = `interventions/${produitId}`;
-
-    const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-    const response = await fetch(
-      'https://safwzkcdomnvlggzxjdr.functions.supabase.co/upload-photo',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, fileContentBase64: base64, path }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error('Erreur upload photo :', result);
-      return null;
-    }
-
-    return {
-      name: file.name,
-      url: result.url,
-      path: `${path}/${fileName}`,
-    };
-  } catch (err) {
-    console.error('Erreur upload photo catch :', err);
-    return null;
-  }
-}
-
 export default function EtapeProduit() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [recherche, setRecherche] = useState('');
   const [selectionnes, setSelectionnes] = useState<ProduitSelectionne[]>([]);
 
   useEffect(() => {
-    supabase
-      .from('produits')
-      .select('*')
-      .then(({ data, error }) => {
-        if (data) setProduits(data);
-        if (error) console.error('Erreur produits :', error);
-      });
+    supabase.from('produits').select('*').then(({ data, error }) => {
+      if (data) setProduits(data);
+      if (error) console.error('Erreur produits :', error);
+    });
   }, []);
 
   const ajouterProduit = (produit: Produit) => {
