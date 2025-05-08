@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../../../../../lib/supabaseClient';
-import { uploadPhotoToServer } from '../../../../../lib/uploadPhoto';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { supabase } from "../../../../../../lib/supabaseClient";
+import { uploadPhotoToServer } from "../../../../../lib/uploadPhoto";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Produit {
   id: string;
@@ -16,20 +17,22 @@ interface Produit {
 interface ProduitSelectionne {
   id: string;
   nom: string;
-  statut: 'fonctionnel' | 'a_remplacer';
+  statut: "fonctionnel" | "a_remplacer";
   remarque?: string;
   photos: { name: string; url: string; path: string }[];
 }
 
 export default function EtapeProduit() {
   const [produits, setProduits] = useState<Produit[]>([]);
-  const [recherche, setRecherche] = useState('');
+  const [recherche, setRecherche] = useState("");
   const [selectionnes, setSelectionnes] = useState<ProduitSelectionne[]>([]);
+  const router = useRouter();
+  const { id } = useParams();
 
   useEffect(() => {
-    supabase.from('produits').select('*').then(({ data, error }) => {
+    supabase.from("produits").select("*").then(({ data, error }) => {
       if (data) setProduits(data);
-      if (error) console.error('Erreur produits :', error);
+      if (error) console.error("Erreur produits :", error);
     });
   }, []);
 
@@ -37,13 +40,13 @@ export default function EtapeProduit() {
     if (!selectionnes.find((p) => p.id === produit.id)) {
       setSelectionnes((prev) => [
         ...prev,
-        { ...produit, statut: 'fonctionnel', photos: [] },
+        { ...produit, statut: "fonctionnel", photos: [] },
       ]);
     }
-    setRecherche('');
+    setRecherche("");
   };
 
-  const modifierStatut = (id: string, statut: 'fonctionnel' | 'a_remplacer') => {
+  const modifierStatut = (id: string, statut: "fonctionnel" | "a_remplacer") => {
     setSelectionnes((prev) =>
       prev.map((p) => (p.id === id ? { ...p, statut } : p))
     );
@@ -66,7 +69,7 @@ export default function EtapeProduit() {
       Array.from(files).map((file) => uploadPhotoToServer(file, produitId))
     );
 
-    const newPhotos = uploads.filter(Boolean) as ProduitSelectionne['photos'];
+    const newPhotos = uploads.filter(Boolean) as ProduitSelectionne["photos"];
 
     if (newPhotos.length > 0) {
       setSelectionnes((prev) =>
@@ -80,9 +83,9 @@ export default function EtapeProduit() {
   };
 
   const supprimerPhoto = async (produitId: string, path: string) => {
-    const { error } = await supabase.storage.from('photos').remove([path]);
+    const { error } = await supabase.storage.from("photos").remove([path]);
     if (error) {
-      console.error('Erreur suppression :', error);
+      console.error("Erreur suppression :", error);
       return;
     }
     setSelectionnes((prev) =>
@@ -146,14 +149,18 @@ export default function EtapeProduit() {
 
           <div className="flex gap-2">
             <Button
-              variant={produit.statut === 'fonctionnel' ? 'default' : 'outline'}
-              onClick={() => modifierStatut(produit.id, 'fonctionnel')}
+              variant={
+                produit.statut === "fonctionnel" ? "default" : "outline"
+              }
+              onClick={() => modifierStatut(produit.id, "fonctionnel")}
             >
               Fonctionnel
             </Button>
             <Button
-              variant={produit.statut === 'a_remplacer' ? 'default' : 'outline'}
-              onClick={() => modifierStatut(produit.id, 'a_remplacer')}
+              variant={
+                produit.statut === "a_remplacer" ? "default" : "outline"
+              }
+              onClick={() => modifierStatut(produit.id, "a_remplacer")}
             >
               À remplacer
             </Button>
@@ -161,7 +168,7 @@ export default function EtapeProduit() {
 
           <Textarea
             placeholder="Remarque optionnelle"
-            value={produit.remarque || ''}
+            value={produit.remarque || ""}
             onChange={(e) => modifierRemarque(produit.id, e.target.value)}
           />
 
@@ -194,6 +201,13 @@ export default function EtapeProduit() {
           )}
         </Card>
       ))}
+
+      <Button
+        className="w-full"
+        onClick={() => router.push(`/technicien/intervention/${id}/signature`)}
+      >
+        Suivant
+      </Button>
     </div>
   );
 }
