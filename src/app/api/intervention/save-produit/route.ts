@@ -9,23 +9,24 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Supprimer les produits existants (cas mise à jour)
+  // Supprimer les anciens produits de l'intervention
   await supabase
     .from('intervention_produits')
     .delete()
     .eq('intervention_id', interventionId);
 
-  // Insérer les nouveaux
-  const insertData = produits.map((p: any) => ({
+  // Préparer les nouvelles lignes
+  const lignes = produits.map((p: any) => ({
     intervention_id: interventionId,
     produit_id: p.id,
     a_remplacer: p.statut === 'a_remplacer',
     remarque: p.remarque || '',
+    photos: p.photos || [], // <= on enregistre les URLs de photos
   }));
 
   const { error } = await supabase
     .from('intervention_produits')
-    .insert(insertData);
+    .insert(lignes);
 
   if (error) {
     console.error('❌ Erreur enregistrement produits intervention :', error);

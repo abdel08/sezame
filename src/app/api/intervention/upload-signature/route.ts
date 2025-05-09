@@ -2,28 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
-  const { base64Data, path } = await req.json();
+  try {
+    const { base64Data, path } = await req.json();
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // pas le anon key ici
-  );
+    if (!base64Data || !path) {
+      return NextResponse.json(
+        { error: 'Champs manquants : base64Data et path sont requis.' },
+        { status: 400 }
+      );
+    }
 
-  const buffer = Buffer.from(base64Data, 'base64');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY! // sécurisé
+    );
 
-  const { error } = await supabase.storage
-    .from('photos')
-    .upload(path, buffer, {
-      contentType: 'image/png',
-      upsert: true,
-    });
+    const buffer = Buffer.from(base64Data, 'base64');
 
-  if (error) {
-    console.error('❌ Erreur upload signature (storage) :', error);
-    return new NextResponse(JSON.stringify({ error }), { status: 400 });
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(path, buffer, {
+        contentType: 'image/png',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return NextResponse.json(
+        { error: 'Erreur upload Supabase', details: uploadError.message },
+        { status: 500 }
+      );
+    }
+
+    const { data } = supabase.storage.from('photos').getPublicUrl(path);
+
+    return NextResponse.json({ url: data.publicUrl });
+  } catch (err: any) {
+    return NextResponse.json({ error: 'Erreur serveur', message: err.message }, { status: 500 });
   }
-
-  const { data } = supabase.storage.from('photos').getPublicUrl(path);
-
-  return NextResponse.json({ url: data.publicUrl });
 }

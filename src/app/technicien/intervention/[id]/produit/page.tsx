@@ -3,23 +3,28 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../../lib/supabaseClient";
-import { uploadPhotoToServer } from "../../../../../lib/uploadPhoto";
+import { uploadPhotoToServer } from "@/lib/uploadPhoto";
+import {
+  saveInterventionToCache,
+  loadInterventionFromCache,
+  type ProduitSelectionne,
+  type InterventionTempData,
+} from "@/lib/interventionCache";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import LayoutTechnicien from "@/components/LayoutTechnicien";
 
 interface Produit {
   id: string;
   nom: string;
-}
-
-interface ProduitSelectionne {
-  id: string;
-  nom: string;
-  statut: "fonctionnel" | "a_remplacer";
-  remarque?: string;
-  photos: { name: string; url: string; path: string }[];
 }
 
 export default function EtapeProduit() {
@@ -36,26 +41,50 @@ export default function EtapeProduit() {
     });
   }, []);
 
+  useEffect(() => {
+    const cache = loadInterventionFromCache(id as string);
+    if (cache?.produits) setSelectionnes(cache.produits);
+  }, [id]);
+
+  const enregistrerDansCache = (updated: ProduitSelectionne[]) => {
+    const cache = loadInterventionFromCache(id as string) || {};
+    saveInterventionToCache(id as string, {
+      ...cache,
+      produits: updated,
+    } as InterventionTempData);
+  };
+
   const ajouterProduit = (produit: Produit) => {
     if (!selectionnes.find((p) => p.id === produit.id)) {
-      setSelectionnes((prev) => [
-        ...prev,
-        { ...produit, statut: "fonctionnel", photos: [] },
-      ]);
+      const updated: ProduitSelectionne[] = [
+        ...selectionnes,
+        {
+          id: produit.id,
+          nom: produit.nom,
+          statut: "fonctionnel",
+          photos: [],
+        },
+      ];
+      setSelectionnes(updated);
+      enregistrerDansCache(updated);
     }
     setRecherche("");
   };
 
   const modifierStatut = (id: string, statut: "fonctionnel" | "a_remplacer") => {
-    setSelectionnes((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, statut } : p))
+    const updated = selectionnes.map((p) =>
+      p.id === id ? { ...p, statut } : p
     );
+    setSelectionnes(updated);
+    enregistrerDansCache(updated);
   };
 
   const modifierRemarque = (id: string, remarque: string) => {
-    setSelectionnes((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, remarque } : p))
+    const updated = selectionnes.map((p) =>
+      p.id === id ? { ...p, remarque } : p
     );
+    setSelectionnes(updated);
+    enregistrerDansCache(updated);
   };
 
   const handleFileInputChange = async (
@@ -72,13 +101,11 @@ export default function EtapeProduit() {
     const newPhotos = uploads.filter(Boolean) as ProduitSelectionne["photos"];
 
     if (newPhotos.length > 0) {
-      setSelectionnes((prev) =>
-        prev.map((p) =>
-          p.id === produitId
-            ? { ...p, photos: [...p.photos, ...newPhotos] }
-            : p
-        )
+      const updated = selectionnes.map((p) =>
+        p.id === produitId ? { ...p, photos: [...p.photos, ...newPhotos] } : p
       );
+      setSelectionnes(updated);
+      enregistrerDansCache(updated);
     }
   };
 
@@ -88,17 +115,19 @@ export default function EtapeProduit() {
       console.error("Erreur suppression :", error);
       return;
     }
-    setSelectionnes((prev) =>
-      prev.map((p) =>
-        p.id === produitId
-          ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) }
-          : p
-      )
+    const updated = selectionnes.map((p) =>
+      p.id === produitId
+        ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) }
+        : p
     );
+    setSelectionnes(updated);
+    enregistrerDansCache(updated);
   };
 
   const retirerProduit = (id: string) => {
-    setSelectionnes((prev) => prev.filter((p) => p.id !== id));
+    const updated = selectionnes.filter((p) => p.id !== id);
+    setSelectionnes(updated);
+    enregistrerDansCache(updated);
   };
 
   const produitsFiltres = produits.filter(
@@ -108,8 +137,8 @@ export default function EtapeProduit() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">Sélection des produits</h1>
+    <LayoutTechnicien>
+      <h1 className="text-2xl font-bold mb-6">🛠️ Vérification des produits</h1>
 
       <Input
         placeholder="Rechercher un produit"
@@ -135,79 +164,73 @@ export default function EtapeProduit() {
       )}
 
       {selectionnes.map((produit) => (
-        <Card key={produit.id} className="p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium">{produit.nom}</h3>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => retirerProduit(produit.id)}
-            >
-              Retirer
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant={
-                produit.statut === "fonctionnel" ? "default" : "outline"
-              }
-              onClick={() => modifierStatut(produit.id, "fonctionnel")}
-            >
-              Fonctionnel
-            </Button>
-            <Button
-              variant={
-                produit.statut === "a_remplacer" ? "default" : "outline"
-              }
-              onClick={() => modifierStatut(produit.id, "a_remplacer")}
-            >
-              À remplacer
-            </Button>
-          </div>
-
-          <Textarea
-            placeholder="Remarque optionnelle"
-            value={produit.remarque || ""}
-            onChange={(e) => modifierRemarque(produit.id, e.target.value)}
-          />
-
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => handleFileInputChange(e, produit.id)}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
-
-          {produit.photos.length > 0 && (
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-              {produit.photos.map((photo, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={photo.url}
-                    alt={photo.name}
-                    className="h-24 w-full object-cover rounded border"
-                  />
-                  <button
-                    onClick={() => supprimerPhoto(produit.id, photo.path)}
-                    className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+        <Card key={produit.id} className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">
+              {produit.nom}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant={produit.statut === "fonctionnel" ? "default" : "outline"}
+                onClick={() => modifierStatut(produit.id, "fonctionnel")}
+              >
+                Fonctionnel
+              </Button>
+              <Button
+                variant={produit.statut === "a_remplacer" ? "default" : "outline"}
+                onClick={() => modifierStatut(produit.id, "a_remplacer")}
+              >
+                À remplacer
+              </Button>
             </div>
-          )}
+
+            <Textarea
+              placeholder="Remarque optionnelle"
+              value={produit.remarque || ""}
+              onChange={(e) => modifierRemarque(produit.id, e.target.value)}
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleFileInputChange(e, produit.id)}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+
+            {produit.photos.length > 0 && (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                {produit.photos.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={photo.url}
+                      alt={photo.name}
+                      className="h-24 w-full object-cover rounded border"
+                    />
+                    <button
+                      onClick={() => supprimerPhoto(produit.id, photo.path)}
+                      className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
       ))}
 
-      <Button
-        className="w-full"
-        onClick={() => router.push(`/technicien/intervention/${id}/signature`)}
-      >
-        Suivant
-      </Button>
-    </div>
+      <div className="sticky bottom-0 bg-white border-t pt-4 pb-6">
+        <Button
+          className="w-full text-base font-semibold"
+          onClick={() => router.push(`/technicien/intervention/${id}/signature`)}
+        >
+          Suivant : Signature du client →
+        </Button>
+      </div>
+    </LayoutTechnicien>
   );
 }
