@@ -14,9 +14,39 @@ import { Loader2 } from 'lucide-react';
 import LayoutDashboardSidebar from '@/components/LayoutDashboardSidebar';
 import { supabase } from '../../../../../lib/supabaseClient';
 
+interface ProduitAssocie {
+  produit_id: string;
+  statut: 'fonctionnel' | 'a_remplacer';
+  remarque?: string;
+  photos: {
+    url: string;
+    path: string;
+    name: string;
+  }[];
+  produits: {
+    nom: string;
+  };
+}
+
+interface Intervention {
+  id: string;
+  motif: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  validation_technicien: 'accepte' | 'refuse' | 'en_attente';
+  signature_url?: string;
+  clients: {
+    nom: string;
+    adresse: string;
+    telephone: string;
+  };
+  intervention_produits: ProduitAssocie[];
+}
+
 export default function FicheInterventionReadOnly() {
   const { id } = useParams();
-  const [intervention, setIntervention] = useState<any | null>(null);
+  const [intervention, setIntervention] = useState<Intervention | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +62,7 @@ export default function FicheInterventionReadOnly() {
         setError('Erreur de chargement des détails.');
         console.error(error);
       } else {
-        setIntervention(data);
+        setIntervention(data as Intervention);
       }
 
       setLoading(false);
@@ -106,14 +136,14 @@ export default function FicheInterventionReadOnly() {
             {intervention.intervention_produits.length === 0 ? (
               <p className="text-muted-foreground text-sm">Aucun produit enregistré.</p>
             ) : (
-              intervention.intervention_produits.map((p: any, i: number) => (
+              intervention.intervention_produits.map((p, i) => (
                 <div key={i} className="border-t pt-2 mt-2 space-y-2">
                   <p><strong>Produit :</strong> {p.produits.nom}</p>
                   <p><strong>Statut :</strong> {p.statut === 'a_remplacer' ? 'À remplacer' : 'Fonctionnel'}</p>
                   {p.remarque && <p><strong>Remarque :</strong> <em>{p.remarque}</em></p>}
                   {p.photos?.length > 0 && (
                     <div className="grid grid-cols-2 gap-2">
-                      {p.photos.map((photo: any, index: number) => (
+                      {p.photos.map((photo, index) => (
                         <Image
                           key={index}
                           src={photo.url}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../../lib/supabaseClient";
@@ -35,10 +36,13 @@ export default function EtapeProduit() {
   const { id } = useParams();
 
   useEffect(() => {
-    supabase.from("produits").select("*").then(({ data, error }) => {
-      if (data) setProduits(data);
-      if (error) console.error("Erreur produits :", error);
-    });
+    supabase
+      .from("produits")
+      .select("*")
+      .then(({ data, error }: { data: Produit[] | null; error: any }) => {
+        if (data) setProduits(data);
+        if (error) console.error("Erreur produits :", error);
+      });
   }, []);
 
   useEffect(() => {
@@ -204,9 +208,11 @@ export default function EtapeProduit() {
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
                 {produit.photos.map((photo, index) => (
                   <div key={index} className="relative group">
-                    <img
+                    <Image
                       src={photo.url}
                       alt={photo.name}
+                      width={300}
+                      height={200}
                       className="h-24 w-full object-cover rounded border"
                     />
                     <button

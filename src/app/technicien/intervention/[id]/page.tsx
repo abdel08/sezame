@@ -34,27 +34,36 @@ export default function InterventionStart() {
         .single();
 
       if (error) {
-        console.error("❌ Erreur intervention :", error);
-        setError("Impossible de charger les données de l'intervention.");
-      } else if (data) {
-        setIntervention(data);
-
-        const cache: InterventionTempData = {
-          clientId: data.client_id,
-          technicienId: "",
-          motif: data.motif,
-          date_intervention: data.date_intervention,
-          heure_debut: data.heure_debut,
-          heure_fin: data.heure_fin,
-          produits: [],
-          signatureBase64: "",
-          clientNom: data.clients.nom,
-          clientAdresse: data.clients.adresse,
-          clientTelephone: data.clients.telephone,
-        };
-
-        saveInterventionToCache(id as string, cache);
+        console.error("❌ Erreur Supabase :", error?.message ?? error);
+        setError("Erreur de chargement de l'intervention.");
+        setLoading(false);
+        return;
       }
+
+      if (!data) {
+        console.error("❌ Intervention introuvable ou vide pour id :", id);
+        setError("Intervention introuvable.");
+        setLoading(false);
+        return;
+      }
+
+      setIntervention(data);
+
+      const cache: InterventionTempData = {
+        clientId: data.client_id,
+        technicienId: "",
+        motif: data.motif,
+        date_intervention: data.date_intervention,
+        heure_debut: data.heure_debut,
+        heure_fin: data.heure_fin,
+        produits: [],
+        signatureBase64: "",
+        clientNom: data.clients.nom,
+        clientAdresse: data.clients.adresse,
+        clientTelephone: data.clients.telephone,
+      };
+
+      saveInterventionToCache(id as string, cache);
       setLoading(false);
     }
 

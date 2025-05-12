@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
-  const { interventionId, produits } = await req.json();
+  const { interventionId, produits } = await req.json() as { interventionId: string; produits: any[] };
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

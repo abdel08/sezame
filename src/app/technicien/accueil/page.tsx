@@ -16,7 +16,17 @@ import { StatusDot } from '@/components/ui/status-dot'
 import LayoutDashboardSidebar from '@/components/LayoutDashboardSidebar'
 import { Tabs } from '@/components/ui/tabs'
 import StatsTechnicien from '@/components/StatsTechnicien'
-import type { Intervention } from '../../types'
+
+interface Intervention {
+  id: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  motif: string;
+  validation_technicien: 'accepte' | 'refuse' | 'en_attente';
+  statut?: 'terminee' | 'en_cours';
+  client_nom?: string | null;
+}
 
 const STATUS_LABELS = {
   accepte: { label: 'Acceptée', variant: 'success' },
@@ -49,8 +59,8 @@ export default function TechnicienAccueil() {
       setUserId(user.id)
 
       const { data, error: dataError } = await supabase
-        .from('interventions')
-        .select('*, clients (nom)')
+        .from('accueil_interventions')
+        .select('*')
         .eq('technicien_id', user.id)
         .order('date_intervention', { ascending: true })
 
@@ -73,8 +83,8 @@ export default function TechnicienAccueil() {
       .eq('id', id)
 
     const { data } = await supabase
-      .from('interventions')
-      .select('*, clients (nom)')
+      .from('accueil_interventions')
+      .select('*')
       .eq('technicien_id', userId)
       .order('date_intervention', { ascending: true })
 
@@ -84,7 +94,7 @@ export default function TechnicienAccueil() {
   const today = new Date().toISOString().split('T')[0]
 
   const filteredInterventions = interventions.filter((intervention) => {
-    const isTerminee = intervention.statut?.toLowerCase() === 'terminee'
+    const isTerminee = intervention.statut === 'terminee'
     const isRefusee = intervention.validation_technicien === 'refuse'
 
     const matchFilter =
@@ -105,7 +115,7 @@ export default function TechnicienAccueil() {
 
     const matchSearch =
       search.trim() === '' ||
-      intervention.clients?.nom?.toLowerCase().includes(search.toLowerCase()) ||
+      intervention.client_nom?.toLowerCase().includes(search.toLowerCase()) ||
       intervention.motif?.toLowerCase().includes(search.toLowerCase()) ||
       intervention.date_intervention.includes(search)
 
@@ -147,13 +157,13 @@ export default function TechnicienAccueil() {
             {filteredInterventions.map((intervention) => {
               const status =
                 STATUS_LABELS[intervention.validation_technicien ?? 'en_attente']
-              const isTerminee = intervention.statut?.toLowerCase() === 'terminee'
+              const isTerminee = intervention.statut === 'terminee'
 
               return (
                 <Card key={intervention.id} className="shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      Intervention chez {intervention.clients?.nom ?? 'Client inconnu'}
+                      Intervention chez {intervention.client_nom ?? 'Client inconnu'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 p-4 sm:p-6">

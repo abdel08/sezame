@@ -1,15 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// @ts-ignore
 import FullCalendar from "@fullcalendar/react";
+// @ts-ignore
 import dayGridPlugin from "@fullcalendar/daygrid";
+// @ts-ignore
 import timeGridPlugin from "@fullcalendar/timegrid";
+// @ts-ignore
 import interactionPlugin from "@fullcalendar/interaction";
+
 import { useRouter } from "next/navigation";
 import LayoutDashboardSidebar from "@/components/LayoutDashboardSidebar";
 import { supabase } from "../../../../lib/supabaseClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Button } from "@/components/ui/button";
+
+// ✅ Typage propre basé sur la view SQL
+interface InterventionRow {
+  id: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  motif: string;
+  validation_technicien: string;
+  client_nom: string | null;
+}
 
 interface InterventionEvent {
   id: string;
@@ -31,35 +47,34 @@ export default function CalendrierTechnicien() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
-        .from("interventions")
-        .select("id, date_intervention, heure_debut, heure_fin, motif, validation_technicien, clients (nom)")
-        .eq("technicien_id", user.id);
+        .from("calendrier_interventions")
+        .select("*");
 
-      if (error || !data) return;
+      if (error || !data) {
+        console.error("Erreur récupération interventions :", error);
+        return;
+      }
 
-      const formatted = data.map((intervention: any) => {
+      const formatted = data.map((intervention: InterventionRow): InterventionEvent => {
         const start = `${intervention.date_intervention}T${intervention.heure_debut}`;
         const end = `${intervention.date_intervention}T${intervention.heure_fin}`;
-
         const statut = intervention.validation_technicien;
+
         const bgColor =
-          statut === "accepte" ? "#22c55e" : statut === "refuse" ? "#ef4444" : "#facc15";
+          statut === "accepte" ? "#22c55e"
+          : statut === "refuse" ? "#ef4444"
+          : "#facc15";
 
         return {
           id: intervention.id,
-          title: `${intervention.heure_debut} - ${intervention.clients?.nom || "Client inconnu"}`,
+          title: `${intervention.heure_debut} - ${intervention.client_nom ?? "Client inconnu"}`,
           start,
           end,
           allDay: false,
           backgroundColor: bgColor,
           extendedProps: {
-            client: intervention.clients?.nom || "Client inconnu",
+            client: intervention.client_nom ?? "Client inconnu",
             motif: intervention.motif,
           },
         };
@@ -71,7 +86,7 @@ export default function CalendrierTechnicien() {
     fetchEvents();
   }, []);
 
-  const handleEventClick = (info: any) => {
+  const handleEventClick = (info: { event: any }) => {
     setSelectedEvent(info.event);
   };
 

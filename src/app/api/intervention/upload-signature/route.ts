@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
     const { data } = supabase.storage.from('photos').getPublicUrl(path);
 
     return NextResponse.json({ url: data.publicUrl });
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Erreur serveur', message: err.message }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    return NextResponse.json({ error: 'Erreur serveur', message }, { status: 500 });
   }
 }
