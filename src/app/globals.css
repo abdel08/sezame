@@ -78,6 +78,54 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* --------- FullCalendar responsive fix --------- */
+
+.fc-toolbar-title {
+  font-size: 1rem !important;
+  font-weight: 600;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .fc-header-toolbar {
+    flex-direction: column !important;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .fc-toolbar-chunk {
+    width: 100%;
+    justify-content: space-between;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fc-button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .fc-daygrid-day-number {
+    font-size: 0.75rem !important;
+  }
+
+  .fc-event {
+    font-size: 0.7rem !important;
+    padding: 1px 4px !important;
+  }
+
+  .fc .fc-scrollgrid-sync-table {
+    table-layout: fixed !important;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.65rem !important;
+    padding: 2px;
+  }
+}
+
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

@@ -7,21 +7,21 @@ interface TabsProps {
   tabs: string[]
   active: string
   onTabChange: (tab: string) => void
-  className?: string // ✅ Pour permettre les classes externes
+  className?: string
 }
 
 export function Tabs({ tabs, active, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn("flex space-x-2 border-b mb-4", className)}>
+    <div className={cn("flex flex-wrap gap-2 border-b pb-2", className)}>
       {tabs.map((tab) => (
         <button
           key={tab}
           onClick={() => onTabChange(tab)}
           className={cn(
-            "px-4 py-2 font-medium text-sm border-b-2 transition-colors",
+            "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
             active === tab
-              ? "border-black text-black"
-              : "border-transparent text-muted-foreground hover:text-black hover:border-gray-300"
+              ? "bg-black text-white shadow"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           )}
         >
           {tab}

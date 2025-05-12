@@ -102,22 +102,31 @@ export default function CalendrierTechnicien() {
     });
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <LayoutDashboardSidebar>
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-bold">📅 Calendrier des interventions</h1>
+      <div className="p-4 sm:p-6 space-y-4">
+        <h1 className="text-xl sm:text-2xl font-bold">📅 Calendrier des interventions</h1>
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          initialView={isMobile ? "timeGridDay" : "dayGridMonth"}
           headerToolbar={{
             left: "prev,next today",
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
+          titleFormat={{ year: "numeric", month: "short", day: "numeric" }}
           locale="fr"
           height="auto"
+          contentHeight="auto"
+          dayMaxEventRows={true}
           events={events}
           eventClick={handleEventClick}
+          dayHeaderContent={(args) => (
+            <span className="text-xs sm:text-sm font-medium">{args.text}</span>
+          )}
+          dayCellClassNames="px-1 sm:px-2 py-1"
         />
 
         {selectedEvent && (

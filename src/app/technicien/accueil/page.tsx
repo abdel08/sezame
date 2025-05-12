@@ -108,7 +108,7 @@ export default function TechnicienAccueil() {
       (filter === 'Terminées' &&
         isTerminee &&
         !isRefusee) ||
-      (filter === 'En attente' &&
+      (filter === 'Attente' &&
         intervention.validation_technicien === 'en_attente') ||
       (filter === 'Refusées' &&
         intervention.validation_technicien === 'refuse')
@@ -124,14 +124,14 @@ export default function TechnicienAccueil() {
 
   return (
     <LayoutDashboardSidebar>
-      <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">👨‍🔧 Tableau de bord technicien</h1>
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4">👨‍🔧 Tableau de bord technicien</h1>
 
         <StatsTechnicien interventions={interventions} />
 
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mt-6 mb-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-6 mb-4">
           <Tabs
-            tabs={['Aujourd’hui', 'À venir', 'Terminées', 'En attente', 'Refusées']}
+            tabs={['Aujourd’hui', 'À venir', 'Terminées', 'Attente', 'Refusées']}
             active={filter}
             onTabChange={setFilter}
           />
@@ -162,7 +162,7 @@ export default function TechnicienAccueil() {
               return (
                 <Card key={intervention.id} className="shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-base sm:text-lg">
                       Intervention chez {intervention.client_nom ?? 'Client inconnu'}
                     </CardTitle>
                   </CardHeader>
@@ -184,8 +184,7 @@ export default function TechnicienAccueil() {
                     </div>
 
                     {intervention.validation_technicien === 'accepte' &&
-                      !isTerminee &&
-                      intervention.id && (
+                      !isTerminee && (
                         <Button
                           onClick={() =>
                             router.push(`/technicien/intervention/${intervention.id}`)
@@ -196,7 +195,7 @@ export default function TechnicienAccueil() {
                         </Button>
                       )}
 
-                    {intervention.validation_technicien === 'en_attente' && intervention.id && (
+                    {intervention.validation_technicien === 'en_attente' && (
                       <div className="flex flex-col sm:flex-row gap-2 mt-4">
                         <Button
                           onClick={() => handleValidation(intervention.id, 'accepte')}
