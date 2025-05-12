@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import FullCalendar from "@fullcalendar/react";
-
 import dayGridPlugin from "@fullcalendar/daygrid";
-
 import timeGridPlugin from "@fullcalendar/timegrid";
-
 import interactionPlugin from "@fullcalendar/interaction";
-
+import { EventClickArg } from "@fullcalendar/core";
 import { useRouter } from "next/navigation";
 import LayoutDashboardSidebar from "@/components/LayoutDashboardSidebar";
 import { supabase } from "../../../../lib/supabaseClient";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-// ✅ Typage propre basé sur la view SQL
 interface InterventionRow {
   id: string;
   date_intervention: string;
@@ -86,8 +86,20 @@ export default function CalendrierTechnicien() {
     fetchEvents();
   }, []);
 
-  const handleEventClick = (info: { event: InterventionEvent }) => {
-    setSelectedEvent(info.event);
+  const handleEventClick = (info: EventClickArg) => {
+    const event = info.event;
+    setSelectedEvent({
+      id: event.id,
+      title: event.title,
+      start: event.startStr,
+      end: event.endStr,
+      allDay: event.allDay,
+      backgroundColor: event.backgroundColor,
+      extendedProps: event.extendedProps as {
+        client: string;
+        motif: string;
+      },
+    });
   };
 
   return (
@@ -105,7 +117,7 @@ export default function CalendrierTechnicien() {
           locale="fr"
           height="auto"
           events={events}
-          eventClick={handleEventClick as any} // Si FullCalendar ne typait pas correctement
+          eventClick={handleEventClick}
         />
 
         {selectedEvent && (
