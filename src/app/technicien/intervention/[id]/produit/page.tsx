@@ -39,7 +39,7 @@ export default function EtapeProduit() {
     supabase
       .from("produits")
       .select("*")
-      .then(({ data, error }: { data: Produit[] | null; error: any }) => {
+      .then(({ data, error }: { data: Produit[] | null; error: Error | null }) => {
         if (data) setProduits(data);
         if (error) console.error("Erreur produits :", error);
       });
@@ -124,12 +124,6 @@ export default function EtapeProduit() {
         ? { ...p, photos: p.photos.filter((photo) => photo.path !== path) }
         : p
     );
-    setSelectionnes(updated);
-    enregistrerDansCache(updated);
-  };
-
-  const retirerProduit = (id: string) => {
-    const updated = selectionnes.filter((p) => p.id !== id);
     setSelectionnes(updated);
     enregistrerDansCache(updated);
   };

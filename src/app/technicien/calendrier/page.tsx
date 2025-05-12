@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// @ts-ignore
+
 import FullCalendar from "@fullcalendar/react";
-// @ts-ignore
+
 import dayGridPlugin from "@fullcalendar/daygrid";
-// @ts-ignore
+
 import timeGridPlugin from "@fullcalendar/timegrid";
-// @ts-ignore
+
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { useRouter } from "next/navigation";
@@ -86,7 +86,7 @@ export default function CalendrierTechnicien() {
     fetchEvents();
   }, []);
 
-  const handleEventClick = (info: { event: any }) => {
+  const handleEventClick = (info: { event: InterventionEvent }) => {
     setSelectedEvent(info.event);
   };
 
@@ -105,7 +105,7 @@ export default function CalendrierTechnicien() {
           locale="fr"
           height="auto"
           events={events}
-          eventClick={handleEventClick}
+          eventClick={handleEventClick as any} // Si FullCalendar ne typait pas correctement
         />
 
         {selectedEvent && (

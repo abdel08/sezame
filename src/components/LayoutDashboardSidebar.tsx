@@ -1,16 +1,10 @@
-// components/LayoutDashboardSidebar.tsx
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  CalendarDays,
-  ClipboardList,
-  LogOut,
-} from 'lucide-react';
+import { CalendarDays, ClipboardList, LogOut } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { useEffect, useState } from 'react';
 
 const navLinks = [
   { label: 'Mes interventions', icon: ClipboardList, href: '/technicien' },
@@ -34,7 +28,6 @@ export default function LayoutDashboardSidebar({ children }: { children: React.R
       <aside className="w-64 bg-white border-r p-6 flex flex-col justify-between shadow-sm">
         <div>
           <h1 className="text-2xl font-bold mb-8">🔧 Technicien</h1>
-
           <nav className="space-y-2">
             {navLinks.map(({ label, icon: Icon, href }) => (
               <Button
@@ -63,9 +56,7 @@ export default function LayoutDashboardSidebar({ children }: { children: React.R
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        {children}
-      </main>
+      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
     </div>
   );
 }

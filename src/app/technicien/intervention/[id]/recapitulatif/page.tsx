@@ -11,12 +11,12 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import LayoutTechnicien from '@/components/LayoutTechnicien';
-import { loadInterventionFromCache } from '@/lib/interventionCache';
+import { loadInterventionFromCache, type InterventionTempData, type ProduitSelectionne } from '@/lib/interventionCache';
 
 export default function PageRecapitulatif() {
   const { id } = useParams();
   const router = useRouter();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<InterventionTempData | null>(null);
 
   useEffect(() => {
     const cached = loadInterventionFromCache(id as string);
@@ -57,7 +57,7 @@ export default function PageRecapitulatif() {
           {data.produits?.length === 0 ? (
             <p className="text-muted-foreground text-sm">Aucun produit sélectionné.</p>
           ) : (
-            data.produits.map((p: any, i: number) => (
+            data.produits.map((p: ProduitSelectionne, i: number) => (
               <div key={i} className="border-t pt-2 mt-2 space-y-1 text-sm">
                 <p><strong>Produit :</strong> {p.nom}</p>
                 <p><strong>Statut :</strong> {p.statut === 'a_remplacer' ? '🔁 À remplacer' : '✅ Fonctionnel'}</p>
@@ -66,7 +66,7 @@ export default function PageRecapitulatif() {
                 )}
                 {p.photos?.length > 0 && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    {p.photos.map((photo: any, index: number) => (
+                    {p.photos.map((photo, index: number) => (
                       <Image
                         key={index}
                         src={photo.url}

@@ -17,11 +17,27 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Info } from "lucide-react";
 import HeaderIntervention from "@/components/HeaderIntervention";
 
+interface SupabaseClientDetails {
+  nom: string;
+  adresse: string;
+  telephone: string;
+}
+
+interface SupabaseIntervention {
+  id: string;
+  client_id: string;
+  motif: string;
+  date_intervention: string;
+  heure_debut: string;
+  heure_fin: string;
+  clients: SupabaseClientDetails;
+}
+
 export default function InterventionStart() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [intervention, setIntervention] = useState<any>(null);
+  const [intervention, setIntervention] = useState<SupabaseIntervention | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +95,9 @@ export default function InterventionStart() {
 
   if (error)
     return <div className="p-6 text-red-600 font-medium">❌ {error}</div>;
+
+  if (!intervention)
+    return <div className="p-6 text-red-600 font-medium">❌ Intervention introuvable.</div>;
 
   return (
     <>
