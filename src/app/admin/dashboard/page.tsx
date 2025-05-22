@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../../../lib/supabaseClient";
 import LayoutAdmin from "@/components/LayoutAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Users, ClipboardList, CalendarDays, TrendingUp, PlusCircle } from "lucide-react";
+import { Loader2, Users, ClipboardList, CalendarDays, TrendingUp, PlusCircle, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import type { ApexOptions } from "apexcharts";
+import { ReactNode } from "react";
+
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -49,8 +51,7 @@ export default function AdminDashboard() {
 
         const repartition: Record<string, number> = {};
         interventionsRes.data?.forEach(({ statut }) => {
-          if (statut in repartition) repartition[statut]++;
-          else repartition[statut] = 1;
+          repartition[statut] = (repartition[statut] || 0) + 1;
         });
 
         setStats({
@@ -70,20 +71,36 @@ export default function AdminDashboard() {
   }, []);
 
   const chartOptions: ApexOptions = {
-    chart: {
-      type: "donut",
-    },
+    chart: { type: "donut" },
     labels: stats ? Object.keys(stats.repartition) : [],
     colors: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"],
-    legend: {
-      position: "bottom", // ✅ Typage valide
-    },
-    dataLabels: {
-      enabled: true,
-    },
+    legend: { position: "bottom" },
+    dataLabels: { enabled: true },
   };
 
   const chartSeries = stats ? Object.values(stats.repartition) : [];
+
+  const StatCard = ({
+    title,
+    icon,
+    value,
+    onClick,
+  }: {
+    title: string;
+    icon: ReactNode;
+    value: number | string;
+    onClick?: () => void;
+  }) => (
+    <Card
+      onClick={onClick}
+      className="hover:shadow-md hover:bg-muted/50 cursor-pointer transition-all duration-200"
+    >
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">{icon}{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="text-2xl font-bold">{value}</CardContent>
+    </Card>
+  );
 
   return (
     <LayoutAdmin>
@@ -92,7 +109,7 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold">🎛️ Tableau de bord administrateur</h1>
           <Button onClick={() => router.push("/admin/interventions/new")} className="gap-2">
             <PlusCircle className="h-5 w-5" />
-            Créer une intervention
+            Nouvelle intervention
           </Button>
         </div>
 
@@ -103,43 +120,25 @@ export default function AdminDashboard() {
         ) : stats && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ClipboardList className="h-5 w-5 text-primary" />
-                    Interventions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">
-                  {stats.totalInterventions}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Techniciens
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">
-                  {stats.totalTechniciens}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5 text-primary" />
-                    Clients
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">
-                  {stats.totalClients}
-                </CardContent>
-              </Card>
-
-              <Card>
+              <StatCard
+                title="Interventions"
+                icon={<ClipboardList className="h-5 w-5 text-primary" />}
+                value={stats.totalInterventions}
+                onClick={() => router.push("/admin/interventions")}
+              />
+              <StatCard
+                title="Techniciens"
+                icon={<Users className="h-5 w-5 text-primary" />}
+                value={stats.totalTechniciens}
+                onClick={() => router.push("/admin/techniciens")}
+              />
+              <StatCard
+                title="Clients"
+                icon={<CalendarDays className="h-5 w-5 text-primary" />}
+                value={stats.totalClients}
+                onClick={() => router.push("/admin/clients")}
+              />
+              <Card className="col-span-1 sm:col-span-2 lg:col-span-1">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-primary" />
@@ -168,13 +167,20 @@ export default function AdminDashboard() {
                   <p className="text-muted-foreground">Aucune intervention planifiée à venir.</p>
                 ) : (
                   stats.prochaines.map((intervention) => (
-                    <div key={intervention.id} className="py-3 space-y-1">
-                      <p><strong>Date :</strong> {intervention.date_intervention}</p>
-                      <p><strong>Client :</strong> {intervention.client_nom ?? "Client inconnu"}</p>
-                      <p><strong>Motif :</strong> {intervention.motif}</p>
-                      <Badge variant="outline" className="text-xs">
-                        ID : {intervention.id}
-                      </Badge>
+                    <div
+                      key={intervention.id}
+                      className="py-3 flex justify-between items-start hover:bg-muted/50 px-2 rounded-md cursor-pointer transition"
+                      onClick={() => router.push(`/admin/interventions/${intervention.id}`)}
+                    >
+                      <div>
+                        <p><strong>Date :</strong> {intervention.date_intervention}</p>
+                        <p><strong>Client :</strong> {intervention.client_nom ?? "Inconnu"}</p>
+                        <p><strong>Motif :</strong> {intervention.motif}</p>
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {intervention.statut}
+                        </Badge>
+                      </div>
+                      <ChevronRight className="text-muted-foreground mt-2" />
                     </div>
                   ))
                 )}

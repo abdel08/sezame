@@ -1,4 +1,6 @@
 import RegisterServiceWorker from '@/components/RegisterServiceWorker';
+import ToastContainer from '@/components/ui/ToastContainer'; // 👈 ajoute ça
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -13,7 +15,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ Ce metadata est bien autorisé ici
 export const metadata: Metadata = {
   title: "Sezame - App",
   description: "Application d’intervention terrain",
@@ -29,7 +30,6 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        {/* ✅ Ajouts importants pour PWA */}
         <meta name="theme-color" content="#2563eb" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -40,7 +40,8 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
-        <RegisterServiceWorker />  
+        <ToastContainer /> {/* ✅ Ajout ici */}
+        <RegisterServiceWorker />
       </body>
     </html>
   );
