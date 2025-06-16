@@ -26,12 +26,20 @@ interface Intervention {
   validation_technicien: 'accepte' | 'refuse' | 'en_attente';
   statut?: 'terminee' | 'en_cours';
   client_nom?: string | null;
+  priorite?: string | null;
 }
 
 const STATUS_LABELS = {
   accepte: { label: 'Acceptée', variant: 'success' },
   refuse: { label: 'Refusée', variant: 'danger' },
   en_attente: { label: 'En attente', variant: 'warning' },
+} as const
+
+const URGENCE_COLORS = {
+  critique: 'danger',
+  haute: 'warning',
+  normale: 'default',
+  faible: 'success',
 } as const
 
 export default function TechnicienAccueil() {
@@ -165,6 +173,16 @@ export default function TechnicienAccueil() {
                     <CardTitle className="text-base sm:text-lg">
                       Intervention chez {intervention.client_nom ?? 'Client inconnu'}
                     </CardTitle>
+                    {intervention.priorite && (
+                      <Badge
+                        variant={
+                          URGENCE_COLORS[intervention.priorite as keyof typeof URGENCE_COLORS]
+                        }
+                        className="mt-2"
+                      >
+                        Urgence : {intervention.priorite}
+                      </Badge>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-2 p-4 sm:p-6">
                     <p><strong>Date :</strong> {intervention.date_intervention}</p>
