@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { StatusDot } from '@/components/ui/status-dot'
 import LayoutDashboardSidebar from '@/components/LayoutDashboardSidebar'
 import { Tabs } from '@/components/ui/tabs'
@@ -39,7 +39,7 @@ const URGENCE_COLORS = {
   critique: 'danger',
   haute: 'warning',
   normale: 'default',
-  faible: 'success',
+  faible: 'outline',
 } as const
 
 export default function TechnicienAccueil() {
@@ -133,7 +133,10 @@ export default function TechnicienAccueil() {
   return (
     <LayoutDashboardSidebar>
       <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4">👨‍🔧 Tableau de bord technicien</h1>
+        <div className="flex items-center gap-2 mb-4">
+          <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
+          <h1 className="text-2xl sm:text-3xl font-bold">👨‍🔧 Tableau de bord technicien</h1>
+        </div>
 
         <StatsTechnicien interventions={interventions} />
 
@@ -175,10 +178,12 @@ export default function TechnicienAccueil() {
                     </CardTitle>
                     {intervention.priorite && (
                       <Badge
+                        className="mt-2 w-fit"
                         variant={
-                          URGENCE_COLORS[intervention.priorite as keyof typeof URGENCE_COLORS]
+                          URGENCE_COLORS[
+                            intervention.priorite as keyof typeof URGENCE_COLORS
+                          ]
                         }
-                        className="mt-2"
                       >
                         Urgence : {intervention.priorite}
                       </Badge>
@@ -201,17 +206,14 @@ export default function TechnicienAccueil() {
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </div>
 
-                    {intervention.validation_technicien === 'accepte' &&
-                      !isTerminee && (
-                        <Button
-                          onClick={() =>
-                            router.push(`/technicien/intervention/${intervention.id}`)
-                          }
-                          className="w-full mt-4"
-                        >
-                          Démarrer l’intervention →
-                        </Button>
-                      )}
+                    {intervention.validation_technicien === 'accepte' && !isTerminee && (
+                      <Button
+                        onClick={() => router.push(`/technicien/intervention/${intervention.id}`)}
+                        className="w-full mt-4"
+                      >
+                        Démarrer l’intervention →
+                      </Button>
+                    )}
 
                     {intervention.validation_technicien === 'en_attente' && (
                       <div className="flex flex-col sm:flex-row gap-2 mt-4">

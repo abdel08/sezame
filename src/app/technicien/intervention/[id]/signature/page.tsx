@@ -16,6 +16,7 @@ import {
   loadInterventionFromCache,
   type InterventionTempData,
 } from '@/lib/interventionCache';
+import { ArrowLeft, PencilLine } from 'lucide-react';
 
 export default function PageSignature() {
   const { id } = useParams();
@@ -64,32 +65,58 @@ export default function PageSignature() {
 
   return (
     <LayoutTechnicien>
-      <h1 className="text-xl font-bold mb-4">✍️ Signature du client</h1>
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="text-sm mb-2 px-2"
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Retour
+        </Button>
 
-      <Card className="overflow-hidden">
+        <div className="flex items-center gap-2 mb-4">
+          <PencilLine className="h-6 w-6 text-blue-600" />
+          <h1 className="text-2xl font-bold">Signature du client</h1>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden shadow-sm">
         <CardHeader>
-          <CardTitle>Veuillez faire signer le client ci-dessous</CardTitle>
+          <CardTitle className="text-base font-medium text-gray-700">
+            ✍️ Faites signer le client ci-dessous
+          </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-6">
-          <div className="rounded-lg border bg-white overflow-hidden shadow-sm">
+          <div className="rounded-lg border bg-white overflow-hidden shadow-inner">
             <SignatureCanvas
               ref={sigRef}
               penColor="black"
-              canvasProps={{ className: 'w-full h-64 cursor-crosshair' }}
+              canvasProps={{
+                className: 'w-full h-64 cursor-crosshair',
+              }}
             />
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={clearSignature} className="w-1/3">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={clearSignature}
+              className="w-1/3"
+            >
               Effacer
             </Button>
-            <Button onClick={saveSignature} className="w-2/3">
+            <Button
+              onClick={saveSignature}
+              className="w-2/3 font-semibold"
+            >
               Enregistrer et continuer →
             </Button>
           </div>
 
           {saved && (
-            <p className="text-green-600 text-sm">
+            <p className="text-green-600 text-sm mt-2">
               ✅ Signature enregistrée avec succès.
             </p>
           )}

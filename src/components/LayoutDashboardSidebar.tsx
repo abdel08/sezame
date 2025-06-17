@@ -13,7 +13,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 
 const navLinks = [
-  { label: 'Mes interventions', icon: ClipboardList, href: '/technicien' },
+  { label: 'Mes interventions', icon: ClipboardList, href: '/technicien/accueil' },
   { label: 'Calendrier', icon: CalendarDays, href: '/technicien/calendrier' },
 ];
 

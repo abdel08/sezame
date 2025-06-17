@@ -30,6 +30,7 @@ interface SupabaseIntervention {
   date_intervention: string;
   heure_debut: string;
   heure_fin: string;
+  priorite?: string;
   clients: SupabaseClientDetails;
 }
 
@@ -45,7 +46,7 @@ export default function InterventionStart() {
     async function fetchIntervention() {
       const { data, error } = await supabase
         .from("interventions")
-        .select("*, clients:client_id(nom, adresse, telephone)")
+        .select("*, priorite, clients:client_id(nom, adresse, telephone)")
         .eq("id", id)
         .single();
 
@@ -103,6 +104,14 @@ export default function InterventionStart() {
     <>
       <HeaderIntervention />
       <main className="p-6 max-w-3xl mx-auto space-y-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="mb-2 text-sm px-2"
+        >
+          ← Retour
+        </Button>
+
         <div className="flex items-center gap-2">
           <Info className="h-6 w-6 text-blue-600" />
           <h1 className="text-3xl font-bold">Démarrer l’intervention</h1>
@@ -127,6 +136,24 @@ export default function InterventionStart() {
             <p><strong>📝 Motif :</strong> {intervention.motif}</p>
             <p><strong>📅 Date :</strong> {intervention.date_intervention}</p>
             <p><strong>⏰ Horaire :</strong> {intervention.heure_debut} - {intervention.heure_fin}</p>
+            {intervention.priorite && (
+              <p>
+                <strong>🚨 Urgence :</strong>{" "}
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-white text-xs font-semibold ${
+                    intervention.priorite === "critique"
+                      ? "bg-red-600"
+                      : intervention.priorite === "haute"
+                      ? "bg-orange-500"
+                      : intervention.priorite === "normale"
+                      ? "bg-gray-400"
+                      : "bg-green-600"
+                  }`}
+                >
+                  {intervention.priorite}
+                </span>
+              </p>
+            )}
           </CardContent>
         </Card>
 

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import LayoutTechnicien from "@/components/LayoutTechnicien";
+import { ArrowLeft } from "lucide-react";
 
 interface Produit {
   id: string;
@@ -136,7 +137,10 @@ export default function EtapeProduit() {
 
   return (
     <LayoutTechnicien>
-      <h1 className="text-2xl font-bold mb-6">🛠️ Vérification des produits</h1>
+      <div className="flex items-center gap-2 mb-4">
+        <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
+        <h1 className="text-2xl font-bold">🛠️ Vérification des produits</h1>
+      </div>
 
       <Input
         placeholder="Rechercher un produit"
@@ -161,69 +165,73 @@ export default function EtapeProduit() {
         </div>
       )}
 
-      {selectionnes.map((produit) => (
-        <Card key={produit.id} className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {produit.nom}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant={produit.statut === "fonctionnel" ? "default" : "outline"}
-                onClick={() => modifierStatut(produit.id, "fonctionnel")}
-              >
-                Fonctionnel
-              </Button>
-              <Button
-                variant={produit.statut === "a_remplacer" ? "default" : "outline"}
-                onClick={() => modifierStatut(produit.id, "a_remplacer")}
-              >
-                À remplacer
-              </Button>
-            </div>
+      {selectionnes.length > 0 && (
+        <div className="space-y-4 mt-6">
+          {selectionnes.map((produit) => (
+            <Card key={produit.id} className="border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {produit.nom} {produit.statut === "a_remplacer" && <span className="text-red-500 text-sm">(à remplacer)</span>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant={produit.statut === "fonctionnel" ? "default" : "outline"}
+                    onClick={() => modifierStatut(produit.id, "fonctionnel")}
+                  >
+                    Fonctionnel
+                  </Button>
+                  <Button
+                    variant={produit.statut === "a_remplacer" ? "default" : "outline"}
+                    onClick={() => modifierStatut(produit.id, "a_remplacer")}
+                  >
+                    À remplacer
+                  </Button>
+                </div>
 
-            <Textarea
-              placeholder="Remarque optionnelle"
-              value={produit.remarque || ""}
-              onChange={(e) => modifierRemarque(produit.id, e.target.value)}
-            />
+                <Textarea
+                  placeholder="Remarque optionnelle"
+                  value={produit.remarque || ""}
+                  onChange={(e) => modifierRemarque(produit.id, e.target.value)}
+                />
 
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handleFileInputChange(e, produit.id)}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileInputChange(e, produit.id)}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
 
-            {produit.photos.length > 0 && (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-                {produit.photos.map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <Image
-                      src={photo.url}
-                      alt={photo.name}
-                      width={300}
-                      height={200}
-                      className="h-24 w-full object-cover rounded border"
-                    />
-                    <button
-                      onClick={() => supprimerPhoto(produit.id, photo.path)}
-                      className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
-                    >
-                      ✕
-                    </button>
+                {produit.photos.length > 0 && (
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                    {produit.photos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <Image
+                          src={photo.url}
+                          alt={photo.name}
+                          width={300}
+                          height={200}
+                          className="h-24 w-full object-cover rounded border"
+                        />
+                        <button
+                          onClick={() => supprimerPhoto(produit.id, photo.path)}
+                          className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <div className="sticky bottom-0 bg-white border-t pt-4 pb-6">
+      <div className="sticky bottom-0 bg-white border-t pt-4 pb-6 mt-6">
         <Button
           className="w-full text-base font-semibold"
           onClick={() => router.push(`/technicien/intervention/${id}/signature`)}

@@ -16,6 +16,21 @@ import {
 } from '@/components/ui/card';
 import LayoutTechnicien from '@/components/LayoutTechnicien';
 import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { generatePdfAndDownload } from '@/lib/pdfGenerator';
+import type { InterventionTempData } from '@/lib/interventionCache';
+
+type PdfInterventionData = {
+  id: string;
+  date: string;
+  client: {
+    nom: string;
+    adresse: string;
+    telephone: string;
+    email?: string;
+  };
+  produits: InterventionTempData['produits'];
+  signatureBase64: string;
+};
 
 export default function PageFinalisation() {
   const { id } = useParams();
@@ -57,7 +72,6 @@ export default function PageFinalisation() {
     const { signatureBase64, produits } = cache;
     const signaturePath = `interventions/${id}/signature.png`;
 
-    // 1. Upload signature
     const uploadRes = await fetch('/api/intervention/upload-signature', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,7 +85,6 @@ export default function PageFinalisation() {
       return;
     }
 
-    // 2. Update intervention with signature + statut = terminee
     const { error: updateError } = await supabase
       .from('interventions')
       .update({
@@ -86,7 +99,6 @@ export default function PageFinalisation() {
       return;
     }
 
-    // 3. Insert selected produits
     const insertProduits = produits.map((p) => ({
       intervention_id: id,
       produit_id: p.id,
@@ -105,7 +117,21 @@ export default function PageFinalisation() {
       return;
     }
 
-    // 4. Clear cache + success
+    const pdfData: PdfInterventionData = {
+      id: id as string,
+      date: cache.date_intervention,
+      client: {
+        nom: cache.clientNom,
+        adresse: cache.clientAdresse,
+        telephone: cache.clientTelephone,
+        email: cache.clientEmail,
+      },
+      produits,
+      signatureBase64,
+    };
+
+    await generatePdfAndDownload(pdfData);
+
     clearInterventionCache(id as string);
     setSuccess(true);
     setLoading(false);
@@ -113,50 +139,55 @@ export default function PageFinalisation() {
 
   return (
     <LayoutTechnicien>
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>🚀 Finalisation de l’intervention</CardTitle>
+          <CardTitle className="text-xl">🚀 Finalisation de l’intervention</CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p>
-            Cette étape enregistre définitivement les données de l’intervention :
-            <br />✅ Signature client &nbsp;&nbsp;✅ Produits sélectionnés
+          <p className="leading-relaxed">
+            Cette étape enregistre définitivement les données :
+            <br />
+            <span className="text-green-700 font-medium">✔ Signature client</span> &nbsp;&nbsp;
+            <span className="text-green-700 font-medium">✔ Produits sélectionnés</span>
           </p>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-600 font-medium">
+            <div className="flex items-center gap-2 text-red-600 text-sm font-medium border border-red-200 bg-red-50 rounded px-3 py-2">
               <AlertTriangle size={18} /> {error}
             </div>
           )}
 
           {success && (
-            <div className="flex items-center gap-2 text-green-600 font-medium">
-              <CheckCircle size={18} /> Intervention finalisée avec succès.
+            <div className="flex items-center gap-2 text-green-600 text-sm font-medium border border-green-200 bg-green-50 rounded px-3 py-2">
+              <CheckCircle size={18} className="animate-bounce" /> Intervention finalisée avec succès.
             </div>
           )}
 
-          <Button
-            onClick={handleFinaliser}
-            disabled={loading || success || alreadyFinalized}
-            className="w-full"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="animate-spin h-4 w-4" />
-                Enregistrement en cours…
-              </span>
-            ) : success || alreadyFinalized ? '✅ Terminé' : 'Finaliser maintenant'}
-          </Button>
-
-          {success && (
+          <div className="flex flex-col gap-3 pt-2">
             <Button
-              variant="outline"
-              onClick={() => router.push('/technicien')}
+              onClick={handleFinaliser}
+              disabled={loading || success || alreadyFinalized}
               className="w-full"
             >
-              Retour à la liste des interventions
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin h-4 w-4" />
+                  Enregistrement en cours…
+                </span>
+              ) : success || alreadyFinalized ? '✅ Déjà finalisée' : '✅ Finaliser maintenant'}
             </Button>
-          )}
+
+            {success && (
+              <Button
+                variant="outline"
+                onClick={() => router.push('/technicien')}
+                className="w-full"
+              >
+                Retour à la liste des interventions
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </LayoutTechnicien>
