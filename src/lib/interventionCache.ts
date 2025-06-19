@@ -18,6 +18,9 @@ export type InterventionTempData = {
   heure_fin: string;
   produits: ProduitSelectionne[];
   signatureBase64: string;
+  type_intervention?: 'contrat' | 'dépannage' | 'chantier' | 'sous garantie'; 
+  etat_installation?: "installation dépannée" | "prévoir travaux" | "installation à l’arrêt";
+
 
   // ✅ Ajout léger pour le PDF (optionnel)
   clientEmail?: string;
