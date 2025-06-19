@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const { width, height } = page.getSize();
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const logoUrl = "https://your-project-url.supabase.co/storage/v1/object/public/photos/logo.png"; // ou ton vrai chemin public
+  const logoUrl = "C:\Users\abdel\sezame\public\assets\logo.jpg"; // ou ton vrai chemin public
 
   const companyName = "SEZAME Fermetures";
   const companyAddress = "10 rue de l’Exemple, 87000 Limoges";

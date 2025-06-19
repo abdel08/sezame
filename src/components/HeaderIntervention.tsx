@@ -1,11 +1,20 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { loadInterventionFromCache } from '@/lib/interventionCache';
 import { useParams } from 'next/navigation';
+import type { InterventionTempData } from '@/lib/interventionCache';
 
 export default function HeaderIntervention() {
   const { id } = useParams();
-  const data = loadInterventionFromCache(id as string);
+  const [data, setData] = useState<InterventionTempData | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      const cachedData = loadInterventionFromCache(id as string);
+      setData(cachedData);
+    }
+  }, [id]);
 
   if (!data) return null;
 

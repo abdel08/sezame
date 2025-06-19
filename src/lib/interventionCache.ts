@@ -24,14 +24,19 @@ export type InterventionTempData = {
 };
 
 export function saveInterventionToCache(id: string, data: InterventionTempData) {
-  localStorage.setItem(`intervention_${id}`, JSON.stringify(data));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`intervention_${id}`, JSON.stringify(data));
+  }
 }
 
 export function loadInterventionFromCache(id: string): InterventionTempData | null {
+  if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem(`intervention_${id}`);
   return raw ? JSON.parse(raw) : null;
 }
 
 export function clearInterventionCache(id: string) {
-  localStorage.removeItem(`intervention_${id}`);
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(`intervention_${id}`);
+  }
 }
