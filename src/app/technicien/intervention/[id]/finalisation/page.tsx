@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import LayoutTechnicien from '@/components/LayoutTechnicien';
 import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-import { generatePdfAndDownload } from '@/lib/pdfGenerator';
+import { generatePdfFromComponent } from '@/lib/generatePdfFromComponent';
 import type { InterventionTempData } from '@/lib/interventionCache';
 
 type PdfInterventionData = {
@@ -130,7 +130,7 @@ export default function PageFinalisation() {
       signatureBase64,
     };
 
-    await generatePdfAndDownload(pdfData);
+    await generatePdfFromComponent(pdfData);
 
     clearInterventionCache(id as string);
     setSuccess(true);

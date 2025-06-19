@@ -7,29 +7,14 @@ import {
   View,
   StyleSheet,
   Image,
-  Font
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
-import logo from '@/public/sezame-logo.webp';
+import type { PdfInterventionData } from '@/lib/type';
 
-interface ProduitPDF {
-  nom: string;
-  statut: 'fonctionnel' | 'a_remplacer';
-  remarque?: string;
-}
+const logo = 'http://localhost:3000/assets/logo.jpg';
 
 interface Props {
-  data: {
-    clientNom: string;
-    clientAdresse: string;
-    clientTelephone: string;
-    motif: string;
-    date_intervention: string;
-    heure_debut: string;
-    heure_fin: string;
-    produits: ProduitPDF[];
-    signatureBase64: string;
-  };
+  data: PdfInterventionData;
 }
 
 const styles = StyleSheet.create({
@@ -58,6 +43,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2e5aac',
+    textTransform: 'uppercase',
   },
   section: {
     marginBottom: 16,
@@ -73,6 +59,7 @@ const styles = StyleSheet.create({
     color: '#2e5aac',
     borderBottom: '1px solid #2e5aac',
     paddingBottom: 3,
+    textTransform: 'uppercase',
   },
   item: {
     marginBottom: 4,
@@ -105,7 +92,7 @@ export function InterventionPDF({ data }: Props) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Image src={logo.src} style={styles.logo} />
+          <Image src={logo} style={styles.logo} />
           <View>
             <Text>SEZAME Fermetures</Text>
             <Text>2 Rue des Entrepreneurs</Text>
@@ -116,25 +103,26 @@ export function InterventionPDF({ data }: Props) {
         </View>
 
         <View style={styles.titleBox}>
-          <Text style={styles.mainTitle}>🛠 Fiche d'intervention</Text>
+          <Text style={styles.mainTitle}>FICHE D’INTERVENTION</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 Client</Text>
-          <Text style={styles.item}><Text style={styles.label}>Nom :</Text> {data.clientNom}</Text>
-          <Text style={styles.item}><Text style={styles.label}>Adresse :</Text> {data.clientAdresse}</Text>
-          <Text style={styles.item}><Text style={styles.label}>Téléphone :</Text> {data.clientTelephone}</Text>
+          <Text style={styles.sectionTitle}>INFORMATIONS CLIENT</Text>
+          <Text style={styles.item}><Text style={styles.label}>Nom :</Text> {data.client.nom}</Text>
+          <Text style={styles.item}><Text style={styles.label}>Adresse :</Text> {data.client.adresse}</Text>
+          <Text style={styles.item}><Text style={styles.label}>Téléphone :</Text> {data.client.telephone}</Text>
+          {data.client.email && (
+            <Text style={styles.item}><Text style={styles.label}>Email :</Text> {data.client.email}</Text>
+          )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📅 Intervention</Text>
-          <Text style={styles.item}><Text style={styles.label}>Date :</Text> {data.date_intervention}</Text>
-          <Text style={styles.item}><Text style={styles.label}>Heure :</Text> {data.heure_debut} - {data.heure_fin}</Text>
-          <Text style={styles.item}><Text style={styles.label}>Motif :</Text> {data.motif}</Text>
+          <Text style={styles.sectionTitle}>DÉTAILS DE L’INTERVENTION</Text>
+          <Text style={styles.item}><Text style={styles.label}>Date :</Text> {data.date}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🧰 Produits vérifiés</Text>
+          <Text style={styles.sectionTitle}>PRODUITS VÉRIFIÉS</Text>
           {data.produits.map((p, i) => (
             <View key={i} style={styles.productBox}>
               <Text>- {p.nom} ({p.statut === 'a_remplacer' ? 'À remplacer' : 'Fonctionnel'})</Text>
@@ -144,7 +132,7 @@ export function InterventionPDF({ data }: Props) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>✍️ Signature du client</Text>
+          <Text style={styles.sectionTitle}>SIGNATURE DU CLIENT</Text>
           <Image src={`data:image/png;base64,${data.signatureBase64}`} style={styles.signature} />
         </View>
 
